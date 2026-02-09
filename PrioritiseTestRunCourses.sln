@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.14.36212.18
+# Visual Studio Version 18
+VisualStudioVersion = 18.2.11415.280 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrioritiseTestRunCourses", "PrioritiseTestRunCourses\PrioritiseTestRunCourses.csproj", "{D69B867A-3E78-48C8-841C-625BAA313EF9}"
 EndProject
@@ -11,7 +11,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		LICENSE = LICENSE
 		README.md = README.md
+		.github\workflows\test-runner.yml = .github\workflows\test-runner.yml
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PrioritiseTestRunCourses.Tests", "PrioritiseTestRunCourses.Tests\PrioritiseTestRunCourses.Tests.csproj", "{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,6 +26,10 @@ Global
 		{D69B867A-3E78-48C8-841C-625BAA313EF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D69B867A-3E78-48C8-841C-625BAA313EF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D69B867A-3E78-48C8-841C-625BAA313EF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

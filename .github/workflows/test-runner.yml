@@ -1,13 +1,29 @@
-name: Manual Runner Test
-on: 
-  workflow_dispatch: # This adds the "Run workflow" button you need
+name: Test Runner
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  hello-narnia:
-    runs-on: prioritise-test-run-courses-arc-runner # Must match your installation name
+  test:
+    runs-on: prioritise-test-run-courses-arc-runner 
+
     steps:
-      - name: Say Hello
-        run: |
-          echo "🎉 Success! This job is running on my home server."
-          echo "Runner Name: $RUNNER_NAME"
-          echo "Operating System: $(uname -a)"
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Run Tests
+        run: dotnet test --no-build --verbosity normal
