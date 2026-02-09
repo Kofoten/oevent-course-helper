@@ -1,0 +1,15 @@
+githubConfigUrl: "https://github.com/Kofoten/PrioritiseTestRunCourses"
+githubConfigSecret: "arc-github-app-secret"
+runnerScaleSetName: "prioritise-test-run-courses-arc-runner"
+
+template:
+  spec:
+    containers:
+      - name: runner
+        image: local/dotnet8-runner:v1 
+        imagePullPolicy: IfNotPresent
+        command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
