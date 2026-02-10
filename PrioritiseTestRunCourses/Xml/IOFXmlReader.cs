@@ -31,20 +31,7 @@ internal sealed class IOFXmlReader
         }
 
         var validationMessages = new List<string>();
-        var settings = new XmlReaderSettings
-        {
-            ValidationType = ValidationType.Schema,
-            Schemas = schemas,
-            ValidationFlags = XmlSchemaValidationFlags.ProcessInlineSchema
-                            | XmlSchemaValidationFlags.ReportValidationWarnings,
-        };
-
-        settings.ValidationEventHandler += (sender, e) =>
-        {
-            validationMessages.Add(e.Message);
-        };
-
-        using var reader = XmlReader.Create(iofXmlPath, settings);
+        using var reader = CreateInnerXmlReader(iofXmlPath, validationMessages);
         var serializer = new XmlSerializer(typeof(CourseData));
         var xmlContent = serializer.Deserialize(reader);
 
@@ -65,6 +52,57 @@ internal sealed class IOFXmlReader
         errors = null;
         courseData = cd;
         return true;
+    }
+
+    public bool TryStream<T>(
+        string iofXmlPath,
+        IXmlNodeReader<T> xmlNodeReader,
+        [NotNullWhen(false)] out List<string>? errors)
+    {
+        if (!File.Exists(iofXmlPath))
+        {
+            errors = [$"The file '{iofXmlPath}' could not be found."];
+            return false;
+        }
+
+        var validationMessages = new List<string>();
+        using var reader = CreateInnerXmlReader(iofXmlPath, validationMessages);
+
+        while (reader.Read())
+        {
+            if (xmlNodeReader.CanRead(reader))
+            {
+                xmlNodeReader.Read(reader);
+            }
+        }
+
+        if (validationMessages.Count > 0)
+        {
+            errors = validationMessages;
+            return false;
+        }
+
+        errors = null;
+        return true;
+    }
+
+    private XmlReader CreateInnerXmlReader(string iofXmlPath, IList<string> validationMessageCollector)
+    {
+        var settings = new XmlReaderSettings
+        {
+            Schemas = schemas,
+            ValidationType = ValidationType.Schema,
+            ValidationFlags = XmlSchemaValidationFlags.ProcessInlineSchema
+                            | XmlSchemaValidationFlags.ReportValidationWarnings
+                            | XmlSchemaValidationFlags.ProcessIdentityConstraints,
+        };
+
+        settings.ValidationEventHandler += (sender, e) =>
+        {
+            validationMessageCollector.Add(e.Message);
+        };
+
+        return XmlReader.Create(iofXmlPath, settings);
     }
 
     internal static IOFXmlReader Create()

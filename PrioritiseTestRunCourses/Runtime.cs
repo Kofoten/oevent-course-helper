@@ -3,6 +3,7 @@ using PrioritiseTestRunCourses.Data;
 using PrioritiseTestRunCourses.Extensions;
 using PrioritiseTestRunCourses.Logging;
 using PrioritiseTestRunCourses.Xml;
+using PrioritiseTestRunCourses.Xml.NodeReaders;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 
@@ -17,17 +18,17 @@ internal class Runtime(Options options, ILogger logger)
     public Result<CourseResult[], ErrorCode> Run()
     {
         var iofReader = IOFXmlReader.Create();
-        if (!iofReader.TryLoad(options.IOFXmlFilePath, out var courseData, out var errors))
+        var courseReader = new CourseNodeReader();
+        if (!iofReader.TryStream(options.IOFXmlFilePath, courseReader, out var errors))
         {
             logger.FailedToLoadFile(options.IOFXmlFilePath, errors.FormatErrors());
             return new Failure<CourseResult[], ErrorCode>(ErrorCode.FailedToLoadFile);
         }
 
         // Convert and filter the IOF data types to a simpler data set.
-        var courses = courseData.RaceCourseData
-            .SelectMany(x => x.Course, (_, y) => Course.FromIOF(y))
-            .Where(x => options.Filters.Count == 0 || options.Filters.Any(y => x.Name.Contains(y)))
+        var courses = courseReader.Courses
             .Where(x => x.Controls.Count > 0)
+            .Where(x => options.Filters.Count == 0 || options.Filters.Any(y => x.Name.Contains(y)))
             .ToFrozenSet();
 
         // Create an inverted index for the courses by using the controls as keys.
