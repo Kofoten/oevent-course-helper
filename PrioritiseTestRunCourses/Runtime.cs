@@ -12,7 +12,7 @@ internal class Runtime(Options options, ILogger logger)
 {
     private const float MaximumRarity = 1.0F;
 
-    private readonly CandidateSolution.RarityPriorityComparer candidateSolutionRarityComparer = new();
+    private static readonly CandidateSolution.RarityPriorityComparer candidateSolutionComparer = new();
 
     public Result<CourseResult[], ErrorCode> Run()
     {
@@ -82,32 +82,49 @@ internal class Runtime(Options options, ILogger logger)
     /// <returns>The required courses ordered by control rarity.</returns>
     private ImmutableList<string>? FindRequiredCourseOrder(FrozenSet<Course> courses, FrozenDictionary<string, float> controlRarityLookup)
     {
-        List<CandidateSolution> beam = [CandidateSolution.Initial(controlRarityLookup)];
+        ImmutableList<CandidateSolution> beam = [CandidateSolution.Initial(controlRarityLookup)];
+
         while (beam.Count > 0)
         {
-            // Compute the new top candidates by adding all completed and new candidates to the priority queue.
-            var topCandidates = new PriorityQueue<CandidateSolution, CandidateSolution>(candidateSolutionRarityComparer);
+            var beamBuilder = new BeamBuilder<CandidateSolution>(options.BeamWidth, candidateSolutionComparer);
+
             foreach (var candidate in beam)
             {
                 if (candidate.IsComplete)
                 {
-                    topCandidates.Enqueue(candidate, candidate);
+                    beamBuilder.Insert(candidate);
                     continue;
                 }
 
-                foreach (var expanded in ExpandCandidate(candidate, courses, controlRarityLookup))
+                foreach (var course in courses)
                 {
-                    topCandidates.Enqueue(expanded, expanded);
+                    if (candidate.Courses.ContainsKey(course.Name))
+                    {
+                        continue;
+                    }
+
+                    var rarityGain = candidate.UnvisitedControls.CalculatePotentialRarityGain(
+                        course.Controls,
+                        controlRarityLookup,
+                        MaximumRarity);
+
+                    if (rarityGain <= 0.0F)
+                    {
+                        continue;
+                    }
+
+                    var projectedScore = candidate.RarityScore - rarityGain;
+                    if (beamBuilder.IsFull && projectedScore >= beamBuilder.Worst()?.RarityScore)
+                    {
+                        continue;
+                    }
+
+                    var expanded = candidate.AddCourse(course, controlRarityLookup, MaximumRarity);
+                    beamBuilder.Insert(expanded);
                 }
             }
 
-            // Prune the candidates and populate a new beam.
-            beam = [];
-            while (beam.Count < options.BeamWidth && topCandidates.Count > 0)
-            {
-                beam.Add(topCandidates.Dequeue());
-            }
-
+            beam = beamBuilder.ToImmutableList();
             if (beam.Count > 0 && beam[0].IsComplete)
             {
                 break;
@@ -122,34 +139,6 @@ internal class Runtime(Options options, ILogger logger)
         return [.. beam[0].Courses
             .OrderBy(x => x.Value)
             .Select(x => x.Key)];
-    }
-
-    /// <summary>
-    /// Expands a candidate by creating all possible following candidates.
-    /// </summary>
-    /// <param name="candidate">The candidate to expand.</param>
-    /// <param name="courses">The courses that are being evaluated.</param>
-    /// <returns>All possible candidates that can follow <paramref name="candidate"/>.</returns>
-    private static IEnumerable<CandidateSolution> ExpandCandidate(
-        CandidateSolution candidate,
-        FrozenSet<Course> courses,
-        FrozenDictionary<string, float> controlRarityLookup)
-    {
-        foreach (var course in courses)
-        {
-            if (candidate.Courses.ContainsKey(course.Name))
-            {
-                continue;
-            }
-
-            var newUnvisitedControls = candidate.UnvisitedControls.Except(course.Controls);
-            var newRarityScore = newUnvisitedControls.Sum(x => controlRarityLookup.GetValueOrDefault(x, MaximumRarity));
-
-            yield return new CandidateSolution(
-                candidate.Courses.Add(course.Name, candidate.Courses.Count),
-                newUnvisitedControls,
-                newRarityScore);
-        }
     }
 
     /// <summary>
