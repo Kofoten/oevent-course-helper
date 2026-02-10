@@ -12,6 +12,8 @@ internal class Runtime(Options options, ILogger logger)
 {
     private const float MaximumRarity = 1.0F;
 
+    private readonly CandidateSolution.RarityPriorityComparer candidateSolutionRarityComparer = new();
+
     public Result<CourseResult[], ErrorCode> Run()
     {
         var iofReader = IOFXmlReader.Create();
@@ -80,12 +82,11 @@ internal class Runtime(Options options, ILogger logger)
     /// <returns>The required courses ordered by control rarity.</returns>
     private ImmutableList<string>? FindRequiredCourseOrder(FrozenSet<Course> courses, FrozenDictionary<string, float> controlRarityLookup)
     {
-        List<CandidateSolution> beam = [CandidateSolution.Initial(controlRarityLookup.Keys)];
-        var comparer = new CandidateSolution.RarityPriorityComparer(controlRarityLookup, MaximumRarity);
+        List<CandidateSolution> beam = [CandidateSolution.Initial(controlRarityLookup)];
         while (beam.Count > 0)
         {
             // Compute the new top candidates by adding all completed and new candidates to the priority queue.
-            var topCandidates = new PriorityQueue<CandidateSolution, CandidateSolution>(comparer);
+            var topCandidates = new PriorityQueue<CandidateSolution, CandidateSolution>(candidateSolutionRarityComparer);
             foreach (var candidate in beam)
             {
                 if (candidate.IsComplete)
@@ -94,7 +95,7 @@ internal class Runtime(Options options, ILogger logger)
                     continue;
                 }
 
-                foreach (var expanded in ExpandCandidate(candidate, courses))
+                foreach (var expanded in ExpandCandidate(candidate, courses, controlRarityLookup))
                 {
                     topCandidates.Enqueue(expanded, expanded);
                 }
@@ -131,7 +132,8 @@ internal class Runtime(Options options, ILogger logger)
     /// <returns>All possible candidates that can follow <paramref name="candidate"/>.</returns>
     private static IEnumerable<CandidateSolution> ExpandCandidate(
         CandidateSolution candidate,
-        FrozenSet<Course> courses)
+        FrozenSet<Course> courses,
+        FrozenDictionary<string, float> controlRarityLookup)
     {
         foreach (var course in courses)
         {
@@ -140,9 +142,13 @@ internal class Runtime(Options options, ILogger logger)
                 continue;
             }
 
+            var newUnvisitedControls = candidate.UnvisitedControls.Except(course.Controls);
+            var newRarityScore = newUnvisitedControls.Sum(x => controlRarityLookup.GetValueOrDefault(x, MaximumRarity));
+
             yield return new CandidateSolution(
                 candidate.Courses.Add(course.Name, candidate.Courses.Count),
-                candidate.UnvisitedControls.Except(course.Controls));
+                newUnvisitedControls,
+                newRarityScore);
         }
     }
 
