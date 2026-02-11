@@ -48,14 +48,20 @@ jobs:
           fi
           echo "Version check passed."
 
+      - name: Set Clean Version
+        shell: bash
+        run: |
+          CLEAN_VER=${GITHUB_REF_NAME#v}
+          echo "SEMVER=$CLEAN_VER" >> $GITHUB_ENV
+
       - name: Restore Dependencies
-        run: dotnet restore
+        run: dotnet restore -p:Version=${{ env.SEMVER }}
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore -p:Version=${{ env.SEMVER }}
 
       - name: Run Tests
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet test --no-build --verbosity normal -p:Version=${{ env.SEMVER }}
 
       - name: Build and Zip All Platforms
         run: |
@@ -69,6 +75,7 @@ jobs:
               -r $RID \
               --self-contained true \
               -p:PublishSingleFile=true \
+              -p:Version=${{ env.SEMVER }} \
               -o ./publish_$RID
             
             zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
