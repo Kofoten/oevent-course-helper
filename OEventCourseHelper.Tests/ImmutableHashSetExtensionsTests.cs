@@ -1,9 +1,9 @@
 ﻿using FluentAssertions;
-using PrioritiseTestRunCourses.Extensions;
+using OEventCourseHelper.Extensions;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 
-namespace PrioritiseTestRunCourses.Tests;
+namespace OEventCourseHelper.Tests;
 
 public class ImmutableHashSetExtensionsTests
 {

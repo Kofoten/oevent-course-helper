@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.Logging;
-using PrioritiseTestRunCourses;
-using PrioritiseTestRunCourses.Data;
-using PrioritiseTestRunCourses.Extensions;
-using PrioritiseTestRunCourses.Logging;
+using OEventCourseHelper;
+using OEventCourseHelper.Data;
+using OEventCourseHelper.Extensions;
+using OEventCourseHelper.Logging;
 
 using var loggerFactory = LoggerFactory.Create(builder =>
 {

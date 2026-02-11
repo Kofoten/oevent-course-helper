@@ -3,6 +3,10 @@ FROM ghcr.io/actions/actions-runner:latest
 
 USER root
 
+RUN apt-get update && apt-get install -y \
+	zip \
+	&& rm -rf /var/lib/apt/lists/*
+
 COPY --from=sdk-source /usr/share/dotnet /usr/share/dotnet
 COPY --from=sdk-source /usr/bin/dotnet /usr/bin/dotnet
 

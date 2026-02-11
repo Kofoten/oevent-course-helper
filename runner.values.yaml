@@ -1,12 +1,12 @@
-githubConfigUrl: "https://github.com/Kofoten/PrioritiseTestRunCourses"
+githubConfigUrl: "https://github.com/Kofoten/oevent-course-helper"
 githubConfigSecret: "arc-github-app-secret"
-runnerScaleSetName: "prioritise-test-run-courses-arc-runner"
+runnerScaleSetName: "oevent-course-helper-arc-runner"
 
 template:
   spec:
     containers:
       - name: runner
-        image: local/dotnet8-runner:v1 
+        image: local/dotnet8-runner:v2
         imagePullPolicy: IfNotPresent
         command: ["/home/runner/run.sh"]
         resources:

@@ -1,0 +1,83 @@
+name: Release Runner
+
+on:
+  push:
+    tags:
+      - 'v+([0-9]).+([0-9]).+([0-9])'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: oevent-course-helper-arc-runner 
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Ensure Tag is on Main
+        run: |
+          git fetch origin main
+
+          if git merge-base --is-ancestor "$GITHUB_REF_NAME" origin/main; then
+            echo "Tag $GITHUB_REF_NAME is on the main branch."
+          else
+            echo "ERROR: Tag $GITHUB_REF_NAME is NOT on the main branch!"
+            echo "Releases can only be created from commits on main."
+            exit 1
+          fi
+
+      - name: Validate Increasing Version
+        run: |
+          TARGET_VERSION="$GITHUB_REF_NAME"
+          echo "VERSION=$TARGET_VERSION" >> $GITHUB_ENV
+          
+          HIGHEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
+          
+          echo "Pushed Tag: $TARGET_VERSION"
+          echo "Highest Tag in Repo: $HIGHEST_TAG"
+
+          if [ "$TARGET_VERSION" != "$HIGHEST_TAG" ]; then
+            echo "ERROR: You pushed $TARGET_VERSION, but $HIGHEST_TAG already exists."
+            echo "Release versions must strictly increase."
+            exit 1
+          fi
+          echo "Version check passed."
+
+      - name: Restore Dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Run Tests
+        run: dotnet test --no-build --verbosity normal
+
+      - name: Build and Zip All Platforms
+        run: |
+          RIDS=("win-x64" "win-x86" "linux-x64")
+          
+          for RID in "${RIDS[@]}"; do
+            echo "Publishing for $RID..."
+            
+            dotnet publish OEventCourseHelper/OEventCourseHelper.csproj \
+              -c Release \
+              -r $RID \
+              --self-contained true \
+              -p:PublishSingleFile=true \
+              -o ./publish_$RID
+            
+            zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: Release ${{ env.VERSION }}
+          files: OEventCourseHelper-${{ env.VERSION }}-*.zip
+          generate_release_notes: true

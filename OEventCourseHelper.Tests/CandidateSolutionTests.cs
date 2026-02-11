@@ -1,10 +1,10 @@
 ﻿using FluentAssertions;
-using PrioritiseTestRunCourses.Data;
+using OEventCourseHelper.Data;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using Xunit;
 
-namespace PrioritiseTestRunCourses.Tests;
+namespace OEventCourseHelper.Tests;
 
 public class CandidateSolutionTests
 {

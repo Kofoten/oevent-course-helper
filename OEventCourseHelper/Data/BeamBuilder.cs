@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace PrioritiseTestRunCourses.Data;
+namespace OEventCourseHelper.Data;
 
 internal class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer)
 {

@@ -1,8 +1,8 @@
-﻿using PrioritiseTestRunCourses.Data;
+﻿using OEventCourseHelper.Data;
 using System.Collections.Frozen;
 using System.Xml;
 
-namespace PrioritiseTestRunCourses.Xml.NodeReaders;
+namespace OEventCourseHelper.Xml.NodeReaders;
 
 internal class CourseNodeReader : IXmlNodeReader<Course>
 {

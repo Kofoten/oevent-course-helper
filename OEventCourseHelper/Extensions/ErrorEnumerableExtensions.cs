@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace PrioritiseTestRunCourses.Extensions;
+namespace OEventCourseHelper.Extensions;
 
 internal static class ErrorEnumerableExtensions
 {

@@ -5,11 +5,11 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-namespace PrioritiseTestRunCourses.Xml;
+namespace OEventCourseHelper.Xml;
 
 internal sealed class IOFXmlReader
 {
-    private const string XsdResourceName = "PrioritiseTestRunCourses.Xml.IOF.xsd";
+    private const string XsdResourceName = "OEventCourseHelper.Xml.IOF.xsd";
 
     private readonly XmlSchemaSet schemas;
 

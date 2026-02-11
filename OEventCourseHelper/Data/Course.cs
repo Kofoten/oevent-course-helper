@@ -1,6 +1,6 @@
 ﻿using System.Collections.Frozen;
 
-namespace PrioritiseTestRunCourses.Data;
+namespace OEventCourseHelper.Data;
 
 internal record Course(string Name, FrozenSet<string> Controls)
 {

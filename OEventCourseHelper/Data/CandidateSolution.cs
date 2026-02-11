@@ -1,8 +1,8 @@
-﻿using PrioritiseTestRunCourses.Extensions;
+﻿using OEventCourseHelper.Extensions;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 
-namespace PrioritiseTestRunCourses.Data;
+namespace OEventCourseHelper.Data;
 
 internal record CandidateSolution(
     ImmutableDictionary<string, int> Courses,

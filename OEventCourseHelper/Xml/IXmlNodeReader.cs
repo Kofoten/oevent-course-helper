@@ -1,6 +1,6 @@
 ﻿using System.Xml;
 
-namespace PrioritiseTestRunCourses.Xml;
+namespace OEventCourseHelper.Xml;
 
 internal interface IXmlNodeReader<T>
 {

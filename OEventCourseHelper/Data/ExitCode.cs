@@ -1,4 +1,4 @@
-﻿namespace PrioritiseTestRunCourses.Data;
+﻿namespace OEventCourseHelper.Data;
 
 internal static class ExitCode
 {

@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
-using PrioritiseTestRunCourses.Data;
-using PrioritiseTestRunCourses.Extensions;
-using PrioritiseTestRunCourses.Logging;
-using PrioritiseTestRunCourses.Xml;
-using PrioritiseTestRunCourses.Xml.NodeReaders;
+using OEventCourseHelper.Data;
+using OEventCourseHelper.Extensions;
+using OEventCourseHelper.Logging;
+using OEventCourseHelper.Xml;
+using OEventCourseHelper.Xml.NodeReaders;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 
-namespace PrioritiseTestRunCourses;
+namespace OEventCourseHelper;
 
 internal class Runtime(Options options, ILogger logger)
 {

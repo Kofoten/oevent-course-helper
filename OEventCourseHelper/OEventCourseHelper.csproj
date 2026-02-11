@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Cli\" />
     <Folder Include="SampleData\" />
   </ItemGroup>
 
@@ -34,7 +35,7 @@
 
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>PrioritiseTestRunCourses.Tests</_Parameter1>
+      <_Parameter1>OEventCourseHelper.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 

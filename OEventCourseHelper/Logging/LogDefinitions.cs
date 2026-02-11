@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-namespace PrioritiseTestRunCourses.Logging;
+namespace OEventCourseHelper.Logging;
 
 internal static partial class LogDefinitions
 {

@@ -1,4 +1,4 @@
-﻿namespace PrioritiseTestRunCourses.Data;
+﻿namespace OEventCourseHelper.Data;
 
 internal abstract record Result<TValue, TError>
     where TError : notnull;

@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: prioritise-test-run-courses-arc-runner 
+    runs-on: oevent-course-helper-arc-runner
 
     steps:
       - name: Checkout Code

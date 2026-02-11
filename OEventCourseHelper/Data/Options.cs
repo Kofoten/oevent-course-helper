@@ -2,7 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
-namespace PrioritiseTestRunCourses.Data;
+namespace OEventCourseHelper.Data;
 
 internal record Options(
     string IOFXmlFilePath,
@@ -86,7 +86,7 @@ internal record Options(
         builder.AppendLine("  Finds the optimal order of courses to visit all controls using a beam search algorithm.");
         builder.AppendLine();
         builder.AppendLine("Usage:");
-        builder.AppendLine("  PrioritiseTestRunCourses <IOFXmlFilePath> [options]");
+        builder.AppendLine("  OEventCourseHelper <IOFXmlFilePath> [options]");
         builder.AppendLine();
         builder.AppendLine("Arguments:");
         builder.AppendLine("  <IOFXmlFilePath>    The path to the IOF XML 3.0 file. (Required)");

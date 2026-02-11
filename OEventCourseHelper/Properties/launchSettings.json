@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "PrioritiseTestRunCourses": {
+    "OEventCourseHelper": {
       "commandName": "Project",
       "commandLineArgs": "\"SampleData\\Test.Courses.xml\" --beam-width 3 --filters Course"
     }
