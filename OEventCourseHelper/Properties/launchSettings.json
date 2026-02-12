@@ -2,7 +2,7 @@
   "profiles": {
     "OEventCourseHelper": {
       "commandName": "Project",
-      "commandLineArgs": "\"SampleData\\Test.Courses.xml\" --beam-width 3 --filters Course"
+      "commandLineArgs": "prioritize \"SampleData\\Test.Courses.xml\" --beam-width 3 --filter Course"
     }
   }
 }

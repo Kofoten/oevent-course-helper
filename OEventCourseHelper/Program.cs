@@ -1,62 +1,32 @@
-﻿using Microsoft.Extensions.Logging;
-using OEventCourseHelper;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using OEventCourseHelper.Cli;
+using OEventCourseHelper.Commands.CoursePrioritizer;
 using OEventCourseHelper.Data;
-using OEventCourseHelper.Extensions;
-using OEventCourseHelper.Logging;
+using Spectre.Console.Cli;
 
 using var loggerFactory = LoggerFactory.Create(builder =>
 {
     builder.AddConsole();
+    builder.SetMinimumLevel(LogLevel.Information);
 });
 
 var logger = loggerFactory.CreateLogger<Program>();
 
-if (!Options.TryParse(args, out var options, out var errors))
-{
-    logger.FailedToParseArguments(errors.FormatErrors());
-    return ExitCode.FailedToParseArguments;
-}
+var services = new ServiceCollection();
+services.AddSingleton(loggerFactory);
+services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
-if (options.Help)
+var registrar = new TypeRegistrar(services);
+var app = new CommandApp(registrar);
+app.Configure(config =>
 {
-    Console.Write(Options.HelpText());
-    return ExitCode.Success;
-}
-
-var runtime = new Runtime(options, logger);
-try
-{
-    var result = runtime.Run();
-    return result switch
+    config.AddCommand<CoursePrioritizerCommand>("prioritize");
+    config.SetExceptionHandler((ex, _) =>
     {
-        Success<CourseResult[], ErrorCode> success => HandleSuccess(success),
-        Failure<CourseResult[], ErrorCode> failure => HandleFailure(failure),
-        _ => ExitCode.UnknownResult,
-    };
-}
-catch (Exception ex)
-{
-    logger.LogCritical(ex, "An unexpected error occurred.");
-    return ExitCode.UnhandledException;
-}
+        logger.LogCritical(ex, "An unexpected error occurred.");
+        return ExitCode.UnhandledException;
+    });
+});
 
-static int HandleSuccess(Success<CourseResult[], ErrorCode> success)
-{
-    foreach (var result in success.Value)
-    {
-        var suffix = result.IsRequired ? " (required)" : string.Empty;
-        Console.WriteLine($"{result.Name}{suffix}");
-    }
-
-    return ExitCode.Success;
-}
-
-static int HandleFailure(Failure<CourseResult[], ErrorCode> failure)
-{
-    return failure.Error switch
-    {
-        ErrorCode.FailedToLoadFile => ExitCode.FailedToLoadFile,
-        ErrorCode.NoSolutionFound => ExitCode.NoSolutionFound,
-        _ => ExitCode.UnexpectedErrorCode,
-    };
-}
+return app.Run(args);

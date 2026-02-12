@@ -1,36 +1,19 @@
-﻿using Microsoft.Extensions.Logging;
-using OEventCourseHelper.Data;
+﻿using OEventCourseHelper.Data;
 using OEventCourseHelper.Extensions;
-using OEventCourseHelper.Logging;
-using OEventCourseHelper.Xml;
-using OEventCourseHelper.Xml.NodeReaders;
 using System.Collections.Frozen;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
-namespace OEventCourseHelper;
+namespace OEventCourseHelper.Commands.CoursePrioritizer;
 
-internal class Runtime(Options options, ILogger logger)
+internal class BeamSearchSolver(int BeamWidth)
 {
     private const float MaximumRarity = 1.0F;
 
     private static readonly CandidateSolution.RarityPriorityComparer candidateSolutionComparer = new();
 
-    public Result<CourseResult[], ErrorCode> Run()
+    public bool TrySolve(IEnumerable<Course> courses, [NotNullWhen(true)] out CourseResult[]? result)
     {
-        var iofReader = IOFXmlReader.Create();
-        var courseReader = new CourseNodeReader();
-        if (!iofReader.TryStream(options.IOFXmlFilePath, courseReader, out var errors))
-        {
-            logger.FailedToLoadFile(options.IOFXmlFilePath, errors.FormatErrors());
-            return new Failure<CourseResult[], ErrorCode>(ErrorCode.FailedToLoadFile);
-        }
-
-        // Convert and filter the IOF data types to a simpler data set.
-        var courses = courseReader.Courses
-            .Where(x => x.Controls.Count > 0)
-            .Where(x => options.Filters.Count == 0 || options.Filters.Any(y => x.Name.Contains(y)))
-            .ToFrozenSet();
-
         // Create an inverted index for the courses by using the controls as keys.
         var coursesInvertedIndex = courses
             .SelectMany(x => x.Controls, (x, y) => (ControlCode: y, Course: x))
@@ -55,13 +38,13 @@ internal class Runtime(Options options, ILogger logger)
         var requiredCourses = FindRequiredCourseOrder(availableCourses, controlRarityLookup);
         if (requiredCourses is null)
         {
-            logger.NoSolutionFound();
-            return new Failure<CourseResult[], ErrorCode>(ErrorCode.NoSolutionFound);
+            result = null;
+            return false;
         }
 
         // Combine the lists/sets into the final result.
         var requiredCoursesSet = requiredCourses.ToFrozenSet();
-        CourseResult[] result = [
+        result = [
             .. requiredCourses.Select(x => new CourseResult(x, true)),
             .. availableCourses
                 .Where(x => !requiredCoursesSet.Contains(x.Name))
@@ -71,7 +54,7 @@ internal class Runtime(Options options, ILogger logger)
             .. dominatedCourses.Order().Select(x => new CourseResult(x, false)),
         ];
 
-        return new Success<CourseResult[], ErrorCode>(result);
+        return true;
     }
 
     /// <summary>
@@ -87,7 +70,7 @@ internal class Runtime(Options options, ILogger logger)
 
         while (beam.Count > 0)
         {
-            var beamBuilder = new BeamBuilder<CandidateSolution>(options.BeamWidth, candidateSolutionComparer);
+            var beamBuilder = new BeamBuilder<CandidateSolution>(BeamWidth, candidateSolutionComparer);
 
             foreach (var candidate in beam)
             {
