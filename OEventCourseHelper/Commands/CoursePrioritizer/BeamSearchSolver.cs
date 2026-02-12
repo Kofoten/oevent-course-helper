@@ -12,7 +12,13 @@ internal class BeamSearchSolver(int BeamWidth)
 
     private static readonly CandidateSolution.RarityPriorityComparer candidateSolutionComparer = new();
 
-    public bool TrySolve(IEnumerable<Course> courses, [NotNullWhen(true)] out CourseResult[]? result)
+    /// <summary>
+    /// Uses a beam search to find an optimal sequence of required courses based on control rarity.
+    /// </summary>
+    /// <param name="courses">The courses to prioritize.</param>
+    /// <param name="solution">The computed solution.</param>
+    /// <returns>True if a solution could be found; otherwise False</returns>
+    public bool TrySolve(IEnumerable<Course> courses, [NotNullWhen(true)] out CourseResult[]? solution)
     {
         // Create an inverted index for the courses by using the controls as keys.
         var coursesInvertedIndex = courses
@@ -38,13 +44,13 @@ internal class BeamSearchSolver(int BeamWidth)
         var requiredCourses = FindRequiredCourseOrder(availableCourses, controlRarityLookup);
         if (requiredCourses is null)
         {
-            result = null;
+            solution = null;
             return false;
         }
 
         // Combine the lists/sets into the final result.
         var requiredCoursesSet = requiredCourses.ToFrozenSet();
-        result = [
+        solution = [
             .. requiredCourses.Select(x => new CourseResult(x, true)),
             .. availableCourses
                 .Where(x => !requiredCoursesSet.Contains(x.Name))
