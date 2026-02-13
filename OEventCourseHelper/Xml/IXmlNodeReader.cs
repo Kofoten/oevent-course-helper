@@ -2,7 +2,7 @@
 
 namespace OEventCourseHelper.Xml;
 
-internal interface IXmlNodeReader<T>
+internal interface IXmlNodeReader
 {
     public bool CanRead(XmlReader reader);
     public void Read(XmlReader reader);

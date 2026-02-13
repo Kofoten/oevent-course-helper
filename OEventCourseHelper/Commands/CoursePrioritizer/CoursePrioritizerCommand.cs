@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
+using OEventCourseHelper.Commands.CoursePrioritizer.IO;
+using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 using OEventCourseHelper.Data;
 using OEventCourseHelper.Extensions;
 using OEventCourseHelper.Logging;
-using OEventCourseHelper.Xml;
-using OEventCourseHelper.Xml.NodeReaders;
+using OEventCourseHelper.Xml.Iof;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Collections.Frozen;
@@ -30,19 +31,20 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
         var iofReader = IOFXmlReader.Create();
-        var courseReader = new CourseNodeReader();
+        var courseReader = new CourseMaskNodeReader();
         if (!iofReader.TryStream(settings.IofXmlFilePath, courseReader, out var errors))
         {
             logger.FailedToLoadFile(settings.IofXmlFilePath, errors.FormatErrors());
             return ExitCode.FailedToLoadFile;
         }
 
-        var filteredCourses = courseReader.Courses
-            .Where(x => x.Controls.Count > 0)
-            .Where(x => settings.Filters.Length == 0 || settings.Filters.Any(y => x.Name.Contains(y)))
+        var courseReaderResult = courseReader.GetResult();
+        var filteredCourses = courseReaderResult.CourseMasks
+            .Where(x => x.ControlMask.Any(y => y != 0))
+            .Where(x => settings.Filters.Length == 0 || settings.Filters.Any(y => x.CourseName.Contains(y)))
             .ToFrozenSet();
 
-        var solver = new BeamSearchSolver(settings.BeamWidth);
+        var solver = new BitmaskBeamSearchSolver(settings.BeamWidth, courseReaderResult.TotalEventControlCount);
         if (!solver.TrySolve(filteredCourses, out var result))
         {
             logger.NoSolutionFound();

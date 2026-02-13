@@ -1,15 +1,13 @@
-﻿using IOF.Xml;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Xml;
 using System.Xml.Schema;
-using System.Xml.Serialization;
 
-namespace OEventCourseHelper.Xml;
+namespace OEventCourseHelper.Xml.Iof;
 
 internal sealed class IOFXmlReader
 {
-    private const string XsdResourceName = "OEventCourseHelper.Xml.IOF.xsd";
+    private const string XsdResourceName = "OEventCourseHelper.Xml.Iof.IOF.xsd";
 
     private readonly XmlSchemaSet schemas;
 
@@ -18,45 +16,9 @@ internal sealed class IOFXmlReader
         this.schemas = schemas;
     }
 
-    public bool TryLoad(
+    public bool TryStream(
         string iofXmlPath,
-        [NotNullWhen(true)] out CourseData? courseData,
-        [NotNullWhen(false)] out List<string>? errors)
-    {
-        if (!File.Exists(iofXmlPath))
-        {
-            errors = [$"The file '{iofXmlPath}' could not be found."];
-            courseData = null;
-            return false;
-        }
-
-        var validationMessages = new List<string>();
-        using var reader = CreateInnerXmlReader(iofXmlPath, validationMessages);
-        var serializer = new XmlSerializer(typeof(CourseData));
-        var xmlContent = serializer.Deserialize(reader);
-
-        if (validationMessages.Count > 0)
-        {
-            errors = validationMessages;
-            courseData = null;
-            return false;
-        }
-
-        if (xmlContent is not CourseData cd)
-        {
-            errors = [$"The file '{iofXmlPath}' could not be loaded."];
-            courseData = null;
-            return false;
-        }
-
-        errors = null;
-        courseData = cd;
-        return true;
-    }
-
-    public bool TryStream<T>(
-        string iofXmlPath,
-        IXmlNodeReader<T> xmlNodeReader,
+        IXmlNodeReader xmlNodeReader,
         [NotNullWhen(false)] out List<string>? errors)
     {
         if (!File.Exists(iofXmlPath))

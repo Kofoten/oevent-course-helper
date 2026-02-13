@@ -4,7 +4,7 @@ using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
-namespace OEventCourseHelper.Commands.CoursePrioritizer;
+namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
 internal class BeamSearchSolver(int BeamWidth)
 {
