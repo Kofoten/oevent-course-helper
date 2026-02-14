@@ -5,7 +5,7 @@ namespace OEventCourseHelper.Extensions;
 internal static class ErrorEnumerableExtensions
 {
     /// <summary>
-    /// Formats the errors in the enumerable into a string with each error indented on a new line.
+    /// Formats the <paramref name="errors"> in the enumerable into a string with each error indented on a new line.
     /// </summary>
     /// <param name="errors">The errors to format.</param>
     /// <returns>A string with each error indented on a new line.</returns>

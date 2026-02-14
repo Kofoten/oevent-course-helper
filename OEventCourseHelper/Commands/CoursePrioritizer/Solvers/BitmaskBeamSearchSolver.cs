@@ -12,7 +12,8 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
     private static readonly BitmaskCandidateSolution.RarityComparer candidateSolutionComparer = new();
 
     /// <summary>
-    /// Uses a beam search to find an optimal sequence of required courses based on control rarity.
+    /// Uses a beam search to priotitize <paramref name="courses"/> and marking the courses that are required
+    /// in order to visit all controls in the orienteering event.
     /// </summary>
     /// <param name="courses">The courses to prioritize.</param>
     /// <param name="solution">The computed solution.</param>
@@ -64,12 +65,12 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
     }
 
     /// <summary>
-    /// Computes the smallest amount of required courses and returns them in a prioritized order
+    /// Computes the least amount of required courses and returns them in a prioritized order
     /// based on the rarity of the courses controls using a beam search algorithm.
     /// </summary>
-    /// <param name="courses">The courses to evaluate.</param>
-    /// <param name="controlRarityLookup">A frozen dictionary from which to lookup the rarity of a specific control.</param>
-    /// <returns>The required courses ordered by control rarity.</returns>
+    /// <param name="courses">The set containing all course masks.</param>
+    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <returns>The required courses ordered by their respective priority.</returns>
     private ImmutableList<string>? FindRequiredCourseOrder(IEnumerable<CourseMask> courses, ImmutableArray<float> controlRarityLookup)
     {
         var initialSolution = BitmaskCandidateSolution.Initial(TotalEventControlCount, controlRarityLookup);
@@ -126,13 +127,20 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         return beam[0].Courses;
     }
 
+    /// <summary>
+    /// Calculates if the provided <paramref name="course"/> is dominated by any other <see cref="CourseMask"/> in <paramref name="allCourses"/>.
+    /// </summary>
+    /// <param name="course">The <see cref="CourseMask"> to check.</param>
+    /// <param name="allCourses">The set containing all course masks.</param>
+    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
     private static bool IsDominated(
-        CourseMask currentCourse,
+        CourseMask course,
         FrozenSet<CourseMask> allCourses,
         ImmutableArray<float> controlRarityLookup)
     {
         var seeker = new RarestSeeker(controlRarityLookup);
-        currentCourse.ForEachControl(ref seeker);
+        course.ForEachControl(ref seeker);
 
         if (seeker.IndexOfRarest == -1)
         {
@@ -144,18 +152,18 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
 
         foreach (var other in allCourses)
         {
-            if (ReferenceEquals(currentCourse, other))
+            if (ReferenceEquals(course, other))
             {
                 continue;
             }
 
             if ((other.ControlMask[bucketIndex] & bitMask) != 0)
             {
-                if (currentCourse.IsSubsetOf(other))
+                if (course.IsSubsetOf(other))
                 {
-                    if (!currentCourse.IsIdenticalTo(other)
+                    if (!course.IsIdenticalTo(other)
                         ||
-                        string.CompareOrdinal(currentCourse.CourseName, other.CourseName) > 0)
+                        string.CompareOrdinal(course.CourseName, other.CourseName) > 0)
                     {
                         return true;
                     }
@@ -166,6 +174,11 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         return false;
     }
 
+    /// <summary>
+    /// Builds an <see cref="ImmutableArray{float}"/> containing each controls rarity score mapped to it's global index value.
+    /// </summary>
+    /// <param name="courses">The set containing all courses.</param>
+    /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
     private ImmutableArray<float> BuildControlRarityLookup(IEnumerable<CourseMask> courses)
     {
         var controlFrequency = new int[TotalEventControlCount];
@@ -184,6 +197,13 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         return rarityLookupBuilder.DrainToImmutable();
     }
 
+    /// <summary>
+    /// A custom priority queue which limits the amount of items to <paramref name="BeamWidth"/> and
+    /// ensures only the best <see cref="T"> are kept by using <paramref name="comparer"/>.
+    /// </summary>
+    /// <typeparam name="T">The item type.</typeparam>
+    /// <param name="BeamWidth">The maximum width of the beam.</param>
+    /// <param name="comparer">The comparere to use.</param>
     private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer)
     {
         private readonly List<T> beam = new(BeamWidth);
@@ -192,6 +212,11 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
 
         public bool IsFull => beam.Count == BeamWidth;
 
+        /// <summary>
+        /// Inserts or discards an item.
+        /// </summary>
+        /// <param name="item">The item to insert.</param>
+        /// <returns>True if the item was keept; otherwise False.</returns>
         public bool Insert(T item)
         {
             int index = beam.BinarySearch(item, comparer);
@@ -216,8 +241,14 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
             return false;
         }
 
+        /// <summary>
+        /// Gets the currently worst item.
+        /// </summary>
         public T? Worst() => beam.Count > 0 ? beam[^1] : default;
 
+        /// <summary>
+        /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
+        /// </summary>
         public ImmutableList<T> ToImmutableList() => [.. beam];
     }
 

@@ -1,9 +1,12 @@
-﻿using OEventCourseHelper.Data;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal struct RarestSeeker(ImmutableArray<float> rarityLookup) : IProcessor
+/// <summary>
+/// Processor to find the rarest control in a <see cref="CourseMask"/>.
+/// </summary>
+/// <param name="rarityLookup">The lookup containing each controls rarity score.</param>
+internal struct RarestSeeker(ImmutableArray<float> rarityLookup) : CourseMask.IProcessor
 {
     private float maxRarity = -1f;
     public int IndexOfRarest = -1;

@@ -5,6 +5,9 @@ using System.Xml;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 
+/// <summary>
+/// Reads the courses from a IOF 3.0 Xml file and counts the total number of used controls.
+/// </summary>
 internal class CourseMaskNodeReader : IXmlNodeReader
 {
     private const string CourseElementName = "Course";
@@ -18,17 +21,23 @@ internal class CourseMaskNodeReader : IXmlNodeReader
     private readonly List<CourseMask.Builder> courseBuilderAccumulator = [];
     private readonly Dictionary<string, int> controlIndexer = [];
 
+    /// <summary>
+    /// Finalizes and returns the currently read data.
+    /// </summary>
+    /// <returns>An instance of <see cref="CourseMaskNodeReaderResult"/></returns>
     public CourseMaskNodeReaderResult GetResult() => new()
     {
         CourseMasks = GetCourseMasks(),
         TotalEventControlCount = currentIndex,
     };
 
+    /// <inheritdoc/>
     public bool CanRead(XmlReader reader)
     {
         return reader.NodeType == XmlNodeType.Element && reader.LocalName == CourseElementName;
     }
 
+    /// <inheritdoc/>
     public void Read(XmlReader reader)
     {
         using var subReader = reader.ReadSubtree();
@@ -59,6 +68,9 @@ internal class CourseMaskNodeReader : IXmlNodeReader
         courseBuilderAccumulator.Add(builder);
     }
 
+    /// <summary>
+    /// Reads a specific CourseControl element.
+    /// </summary>
     private int ProcessCourseControl(XmlReader reader, IList<ulong> controlMask)
     {
         var controlCount = 0;
@@ -109,6 +121,9 @@ internal class CourseMaskNodeReader : IXmlNodeReader
         return controlCount;
     }
 
+    /// <summary>
+    /// Builds <see cref="CourseMask"/> that contains the same amount of buckets.
+    /// </summary>
     private IEnumerable<CourseMask> GetCourseMasks()
     {
         if (currentIndex == 0)
@@ -116,7 +131,7 @@ internal class CourseMaskNodeReader : IXmlNodeReader
             yield break;
         }
 
-        var bucketCount = currentIndex.GetUnsignedLongBucketCount();
+        var bucketCount = currentIndex.Get64BitBucketCount();
         foreach (var builder in courseBuilderAccumulator)
         {
             yield return builder.ToCourseMask(bucketCount);

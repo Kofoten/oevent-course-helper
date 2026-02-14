@@ -1,8 +1,9 @@
-﻿using OEventCourseHelper.Data;
+﻿namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
-
-struct RarityCounter : IProcessor
+/// <summary>
+/// Processor to add 1 to an index in an integer array matching the controls index.
+/// </summary>
+struct RarityCounter : CourseMask.IProcessor
 {
     public int[] Counts;
 

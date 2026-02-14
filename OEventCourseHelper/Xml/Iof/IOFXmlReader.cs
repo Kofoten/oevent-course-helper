@@ -16,6 +16,13 @@ internal sealed class IOFXmlReader
         this.schemas = schemas;
     }
 
+    /// <summary>
+    /// Tries to read the specified IOF 3.0 Xml file by streaming it using an <see cref="IXmlNodeReader"/> to read and extract specific data from the file.
+    /// </summary>
+    /// <param name="iofXmlPath">The path to the IOF 3.0 Xml file.</param>
+    /// <param name="xmlNodeReader">The node reader to use for reading.</param>
+    /// <param name="errors">Returns any errors that occured while reading the file.</param>
+    /// <returns>True if the file was read without issues; otherwise False.</returns>
     public bool TryStream(
         string iofXmlPath,
         IXmlNodeReader xmlNodeReader,
@@ -67,6 +74,12 @@ internal sealed class IOFXmlReader
         return XmlReader.Create(iofXmlPath, settings);
     }
 
+    /// <summary>
+    /// Creates a new instance of <see cref="IOFXmlReader"/> pre loaded with the schema file for IOF 3.0 Xml files. This instance is reusable.
+    /// </summary>
+    /// <returns>A new instance of <see cref="IOFXmlReader"/></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    /// <exception cref="AggregateException"></exception>
     internal static IOFXmlReader Create()
     {
         var xsdErrors = new List<XmlSchemaException>();

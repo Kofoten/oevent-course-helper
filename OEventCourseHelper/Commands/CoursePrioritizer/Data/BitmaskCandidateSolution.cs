@@ -4,21 +4,29 @@ using System.Numerics;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
+/// <summary>
+/// Contains a possible solution on which courses are required for the test run.
+/// </summary>
 internal record BitmaskCandidateSolution(
     ImmutableList<string> Courses,
     ImmutableArray<ulong> UnvisitedControlsMask,
     float RarityScore)
 {
+    /// <summary>
+    /// Indicates if this solution covers all controls used in the orienteering event.
+    /// </summary>
     public bool IsComplete => UnvisitedControlsMask.All(x => x == 0);
 
     /// <summary>
-    /// Creates a new CandidateSolution initialized by the computed values in the provided controlsWithRarity dictionary.
+    /// Creates a new instance of <see cref="BitmaskCandidateSolution"/> with the bits for all controls in the entire
+    /// orienteering event set to one and with the total rarity score of all theese controls summarized togheter.
     /// </summary>
-    /// <param name="controlsWithRarity">The full set of controls with their pre calculated rarity (weight).</param>
-    /// <returns>A new instance of CandidateSolution.</returns>
+    /// <param name="totalEventControlCount">The total number of controls used by the orienteering event.</param>
+    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/>.</returns>
     public static BitmaskCandidateSolution Initial(int totalEventControlCount, ImmutableArray<float> controlRarityLookup)
     {
-        var bucketCount = totalEventControlCount.GetUnsignedLongBucketCount();
+        var bucketCount = totalEventControlCount.Get64BitBucketCount();
         var unvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(bucketCount);
 
         for (int i = 0; i < bucketCount - 1; i++)
@@ -40,10 +48,12 @@ internal record BitmaskCandidateSolution(
     }
 
     /// <summary>
-    /// Computes a new CandidateSolution based on the added Course leaving the source CandidateSolution unmodified.
+    /// Computes a new instance of <see cref="BitmaskCandidateSolution"/> based on <paramref name="course"> leaving
+    /// the source <see cref="BitmaskCandidateSolution"/> unmodified.
     /// </summary>
-    /// <param name="course">The Course to add to the CandidateSolution</param>
-    /// <returns>A new CandidateSolution instance containing the new solution state.</returns>
+    /// <param name="course">The <see cref="CourseMask"/> to add to the solution.</param>
+    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/> containing the modified state.</returns>
     public BitmaskCandidateSolution AddCourse(CourseMask course, ImmutableArray<float> controlRarityLookup)
     {
         var newUnvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(UnvisitedControlsMask.Length);
@@ -65,6 +75,12 @@ internal record BitmaskCandidateSolution(
             RarityScore - rarityGain);
     }
 
+    /// <summary>
+    /// Calculates the rarity that would be gained by adding <paramref name="course"/> to this solution.
+    /// </summary>
+    /// <param name="course">The <see cref="CourseMask"/> to calculate rarity gain for.</param>
+    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <returns>The calculated gain to this solution by including the provided <see cref="CourseMask"/>.</returns>
     public float GetPotentialRarityGain(CourseMask course, ImmutableArray<float> controlRarityLookup)
     {
         var rarityGain = 0.0F;
@@ -79,6 +95,10 @@ internal record BitmaskCandidateSolution(
         return rarityGain;
     }
 
+    /// <summary>
+    /// Internal method for calculating the rarity gain between two buckets in order for <see cref="AddCourse"/>
+    /// and <see cref="GetPotentialRarityGain"/> to compute the exact same value.
+    /// </summary>
     private static float GetBucketRarityGain(
         int bucketIndex,
         ulong unvisitedBucket,
@@ -104,6 +124,9 @@ internal record BitmaskCandidateSolution(
         return rarityGain;
     }
 
+    /// <summary>
+    /// A comparere for <see cref="BitmaskCandidateSolution"/> that prioritizes control rarity over control count.
+    /// </summary>
     internal class RarityComparer() : IComparer<BitmaskCandidateSolution>
     {
         public int Compare(BitmaskCandidateSolution? x, BitmaskCandidateSolution? y)
