@@ -55,7 +55,10 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
                 .OrderByDescending(x => x.ControlCount)
                 .ThenBy(x => x.CourseName)
                 .Select(x => new CourseResult(x.CourseName, false)),
-            .. dominatedCourses.Order().Select(x => new CourseResult(x.CourseName, false)),
+            .. dominatedCourses
+                .OrderByDescending(x => x.ControlCount)
+                .ThenBy(x => x.CourseName)
+                .Select(x => new CourseResult(x.CourseName, false)),
         ];
 
         return true;
@@ -176,7 +179,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         var rarityLookupBuilder = ImmutableArray.CreateBuilder<float>(TotalEventControlCount);
         for (int i = 0; i < TotalEventControlCount; i++)
         {
-            rarityLookupBuilder[i] = controlFrequency[i] > 0 ? MaximumRarity / controlFrequency[i] : 0f;
+            rarityLookupBuilder.Add(controlFrequency[i] > 0 ? MaximumRarity / controlFrequency[i] : 0f);
         }
 
         return rarityLookupBuilder.DrainToImmutable();

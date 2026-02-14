@@ -23,17 +23,17 @@ internal record BitmaskCandidateSolution(
 
         for (int i = 0; i < bucketCount - 1; i++)
         {
-            unvisitedControlsMask[i] = ulong.MaxValue;
+            unvisitedControlsMask.Add(ulong.MaxValue);
         }
 
         var remainder = totalEventControlCount & 63;
         if (remainder == 0)
         {
-            unvisitedControlsMask[^1] = ulong.MaxValue;
+            unvisitedControlsMask.Add(ulong.MaxValue);
         }
         else
         {
-            unvisitedControlsMask[^1] = (1UL << remainder) - 1;
+            unvisitedControlsMask.Add((1UL << remainder) - 1);
         }
 
         return new([], unvisitedControlsMask.DrainToImmutable(), controlRarityLookup.Sum());

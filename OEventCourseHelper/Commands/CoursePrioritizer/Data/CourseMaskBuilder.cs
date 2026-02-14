@@ -13,7 +13,14 @@ internal class CourseMaskBuilder()
         var maskBuilder = ImmutableArray.CreateBuilder<ulong>(bucketCount);
         for (int i = 0; i < bucketCount; i++)
         {
-            maskBuilder.Add(ControlMask[i]);
+            if (i < ControlMask.Count)
+            {
+                maskBuilder.Add(ControlMask[i]);
+            }
+            else
+            {
+                maskBuilder.Add(0UL);
+            }
         }
 
         return new CourseMask(
