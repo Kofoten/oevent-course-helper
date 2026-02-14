@@ -15,7 +15,7 @@ internal class CourseMaskNodeReader : IXmlNodeReader
     private const string ValidControlTypeAttributeValue = "Control";
 
     private int currentIndex = 0;
-    private readonly List<CourseMaskBuilder> courseBuilderAccumulator = [];
+    private readonly List<CourseMask.Builder> courseBuilderAccumulator = [];
     private readonly Dictionary<string, int> controlIndexer = [];
 
     public CourseMaskNodeReaderResult GetResult() => new()
@@ -34,7 +34,7 @@ internal class CourseMaskNodeReader : IXmlNodeReader
         using var subReader = reader.ReadSubtree();
         subReader.Read();
 
-        var builder = new CourseMaskBuilder();
+        var builder = new CourseMask.Builder();
         while (subReader.Read())
         {
             if (subReader.NodeType == XmlNodeType.Element)
@@ -121,5 +121,11 @@ internal class CourseMaskNodeReader : IXmlNodeReader
         {
             yield return builder.ToCourseMask(bucketCount);
         }
+    }
+
+    internal record CourseMaskNodeReaderResult
+    {
+        public required IEnumerable<CourseMask> CourseMasks { get; init; }
+        public required int TotalEventControlCount { get; init; }
     }
 }
