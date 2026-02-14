@@ -29,7 +29,7 @@ internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask,
     }
 
     /// <summary>
-    /// Checks if <paramref name="other"/> is a subset of this one.
+    /// Checks if <paramref name="other"/> is a subset of this.
     /// </summary>
     /// <param name="other">The <see cref="CourseMask"/> to check.</param>
     /// <returns>True if <paramref name="other"/> is a subset of this; otherwise False.</returns>
@@ -47,7 +47,7 @@ internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask,
     }
 
     /// <summary>
-    /// Checks if <paramref name="other"/> is identical to this one.
+    /// Checks if <paramref name="other"/> is identical to this.
     /// </summary>
     /// <param name="other">The <see cref="CourseMask"/> to compare to.</param>
     /// <returns>True if <paramref name="other"/> is identical to this; otherwise False.</returns>

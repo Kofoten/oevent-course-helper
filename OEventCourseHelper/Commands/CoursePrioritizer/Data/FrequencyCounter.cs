@@ -3,7 +3,7 @@
 /// <summary>
 /// Processor to add 1 to an index in an integer array matching the controls index.
 /// </summary>
-struct RarityCounter : CourseMask.IProcessor
+struct FrequencyCounter : CourseMask.IProcessor
 {
     public int[] Counts;
 

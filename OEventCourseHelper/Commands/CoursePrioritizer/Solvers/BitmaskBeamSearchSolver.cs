@@ -182,7 +182,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
     private ImmutableArray<float> BuildControlRarityLookup(IEnumerable<CourseMask> courses)
     {
         var controlFrequency = new int[TotalEventControlCount];
-        var counter = new RarityCounter { Counts = controlFrequency };
+        var counter = new FrequencyCounter { Counts = controlFrequency };
         foreach (var course in courses)
         {
             course.ForEachControl(ref counter);
