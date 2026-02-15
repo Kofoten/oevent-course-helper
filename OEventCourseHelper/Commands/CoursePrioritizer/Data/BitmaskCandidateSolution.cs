@@ -48,7 +48,7 @@ internal record BitmaskCandidateSolution(
     }
 
     /// <summary>
-    /// Computes a new instance of <see cref="BitmaskCandidateSolution"/> based on <paramref name="course"> leaving
+    /// Computes a new instance of <see cref="BitmaskCandidateSolution"/> based on <paramref name="course"/> leaving
     /// the source <see cref="BitmaskCandidateSolution"/> unmodified.
     /// </summary>
     /// <param name="course">The <see cref="CourseMask"/> to add to the solution.</param>

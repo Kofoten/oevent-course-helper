@@ -9,7 +9,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask, int ControlCount)
 {
     /// <summary>
-    /// Loops through all the controls in this <see cref="CourseMask"> one by one for processing by a provided processor.
+    /// Loops through all the controls in this <see cref="CourseMask"/> one by one for processing by a provided processor.
     /// </summary>
     /// <typeparam name="T">The type of processor to use.</typeparam>
     /// <param name="processor">The processor to use.</param>

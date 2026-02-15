@@ -39,10 +39,8 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
         }
 
         var courseReaderResult = courseReader.GetResult();
-        var filteredCourses = courseReaderResult.CourseMasks
-            .Where(x => x.ControlMask.Any(y => y != 0))
-            .Where(x => settings.Filters.Length == 0 || settings.Filters.Any(y => x.CourseName.Contains(y)))
-            .ToFrozenSet();
+        var filter = new CourseMaskFilter(true, [.. settings.Filters]);
+        var filteredCourses = filter.Filter(courseReaderResult.CourseMasks).ToFrozenSet();
 
         var solver = new BitmaskBeamSearchSolver(settings.BeamWidth, courseReaderResult.TotalEventControlCount);
         if (!solver.TrySolve(filteredCourses, out var result))
