@@ -11,13 +11,19 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		LICENSE = LICENSE
 		README.md = README.md
-		.github\workflows\release-runner.yml = .github\workflows\release-runner.yml
 		runner.Dockerfile = runner.Dockerfile
 		runner.values.yaml = runner.values.yaml
-		.github\workflows\test-runner.yml = .github\workflows\test-runner.yml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Tests", "OEventCourseHelper.Tests\OEventCourseHelper.Tests.csproj", "{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{3666B3E0-D23D-4969-8029-BF5539881FAD}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{F2130D84-D355-4EA7-BBE9-955D4E0AA2B5}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\release-runner.yml = .github\workflows\release-runner.yml
+		.github\workflows\test-runner.yml = .github\workflows\test-runner.yml
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +42,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3666B3E0-D23D-4969-8029-BF5539881FAD} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{F2130D84-D355-4EA7-BBE9-955D4E0AA2B5} = {3666B3E0-D23D-4969-8029-BF5539881FAD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {633C74D5-2EB7-4B6E-BD32-9D369B0D51F4}
