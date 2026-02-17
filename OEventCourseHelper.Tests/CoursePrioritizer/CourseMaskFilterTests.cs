@@ -7,46 +7,62 @@ namespace OEventCourseHelper.Tests.CoursePrioritizer;
 public class CourseMaskFilterTests
 {
     [Fact]
-    public void Filter_ShouldRemoveEmptyCourses()
+    public void Matches_SouldMatchCourse()
     {
         // Setup
-        var courseMasks = new CourseMask[]
+        var builder = new CourseMask.Builder()
         {
-            new("Course 1", [1Ul], 1),
-            new("Course 2", [0Ul], 0),
-            new("Course 3", [2Ul], 1),
+            CourseName = "Course",
+            ControlMask = [1Ul],
+            ControlCount = 1,
         };
 
         var filter = new CourseMaskBuilderFilter(true, ["Course"]);
 
         // Act
-        var actual = filter.Filter(courseMasks).ToList();
+        var actual = filter.Matches(builder);
 
         // Assert
-        actual.Should().HaveCount(2);
-        actual[0].CourseName.Should().Be("Course 1");
-        actual[1].CourseName.Should().Be("Course 3");
+        actual.Should().BeTrue();
     }
 
     [Fact]
-    public void Filter_ShouldRemoveCourseNotContainingAnyFilterString()
+    public void Matches_ShouldNotMatchEmptyCourses()
     {
         // Setup
-        var courseMasks = new CourseMask[]
+        var builder = new CourseMask.Builder()
         {
-            new("Course 1", [1Ul], 1),
-            new("Cours 2", [4Ul], 1),
-            new("Course 3", [2Ul], 1),
+            CourseName = "Empty",
+            ControlMask = [0Ul],
+            ControlCount = 0,
         };
 
-        var filter = new CourseMaskBuilderFilter(true, ["Course"]);
+        var filter = new CourseMaskBuilderFilter(true, []);
 
         // Act
-        var actual = filter.Filter(courseMasks).ToList();
+        var actual = filter.Matches(builder);
 
         // Assert
-        actual.Should().HaveCount(2);
-        actual[0].CourseName.Should().Be("Course 1");
-        actual[1].CourseName.Should().Be("Course 3");
+        actual.Should().BeFalse();
+    }
+
+    [Fact]
+    public void Matches_ShouldNotMatchCourseNotContainingAnyFilterString()
+    {
+        // Setup
+        var builder = new CourseMask.Builder()
+        {
+            CourseName = "NoMatch",
+            ControlMask = [4Ul],
+            ControlCount = 1,
+        };
+
+        var filter = new CourseMaskBuilderFilter(false, ["Course"]);
+
+        // Act
+        var actual = filter.Matches(builder);
+
+        // Assert
+        actual.Should().BeFalse();
     }
 }

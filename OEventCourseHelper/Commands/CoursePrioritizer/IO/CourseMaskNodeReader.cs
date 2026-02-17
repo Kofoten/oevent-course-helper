@@ -24,7 +24,8 @@ internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeRe
     /// Finalizes and returns the currently read data as a <see cref="BitmaskBeamSearchSolverContext"/>.
     /// </summary>
     /// <returns>An instance of <see cref="BitmaskBeamSearchSolverContext"/></returns>
-    public BitmaskBeamSearchSolverContext GetBitmaskBeamSearchSolverContext() => new(currentIndex, courseBuilderAccumulator);
+    public BitmaskBeamSearchSolverContext GetBitmaskBeamSearchSolverContext()
+        => BitmaskBeamSearchSolverContext.Create(currentIndex, courseBuilderAccumulator);
 
     /// <inheritdoc/>
     public bool CanRead(XmlReader reader)

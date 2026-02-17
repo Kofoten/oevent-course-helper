@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Commands.CoursePrioritizer.Data;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Tests.CoursePrioritizer;
@@ -15,8 +16,15 @@ public class BitmaskCandidateSolutionTests
             .Select(_ => 0.5F)
             .ToImmutableArray();
 
+        var context = new BitmaskBeamSearchSolverContext(
+            totalEventControlCount,
+            controlRarityLookup.Sum(),
+            2,
+            FrozenSet<CourseMask>.Empty,
+            controlRarityLookup);
+
         // Act
-        var actual = BitmaskCandidateSolution.Initial(totalEventControlCount, controlRarityLookup);
+        var actual = BitmaskCandidateSolution.Initial(context);
 
         // Assert
         actual.Courses.Should().HaveCount(0);

@@ -3,25 +3,43 @@ using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal class BitmaskBeamSearchSolverContext
+internal class BitmaskBeamSearchSolverContext(
+    int totalEventControlCount,
+    float totalRaritySum,
+    int bucketCount,
+    FrozenSet<CourseMask> courseMasks,
+    ImmutableArray<float> controlRarityLookup)
 {
     public const float MaximumRarity = 1.0F;
 
-    public FrozenSet<CourseMask> CourseMasks { get; private init; }
-    public ImmutableArray<float> ControlRarityLookup { get; private init; }
-    public int TotalEventControlCount { get; private init; }
-    public float TotalRaritySum { get; private init; }
-    public int BucketCount { get; private init; }
+    public FrozenSet<CourseMask> CourseMasks { get; private init; } = courseMasks;
+    public ImmutableArray<float> ControlRarityLookup { get; private init; } = controlRarityLookup;
+    public int TotalEventControlCount { get; private init; } = totalEventControlCount;
+    public float TotalRaritySum { get; private init; } = totalRaritySum;
+    public int BucketCount { get; private init; } = bucketCount;
 
-    public BitmaskBeamSearchSolverContext(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseMasksBuilders)
+    /// <summary>
+    /// Builds a new <see cref="BitmaskBeamSearchSolverContext"/> from <paramref name="courseMasksBuilders"/>.
+    /// </summary>
+    /// <param name="totalEventControlCount">The total number of controls in the event.</param>
+    /// <param name="courseMasksBuilders">The course mask builders to create the context from.</param>
+    /// <returns>A new instance of <see cref="BitmaskBeamSearchSolverContext"/>.</returns>
+    public static BitmaskBeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseMasksBuilders)
     {
-        TotalEventControlCount = totalEventControlCount;
-        BucketCount = ((totalEventControlCount - 1) >> 6) + 1;
-        CourseMasks = courseMasksBuilders
-            .Select(x => x.ToCourseMask(BucketCount))
+        var bucketCount = ((totalEventControlCount - 1) >> 6) + 1;
+        var courseMasks = courseMasksBuilders
+            .Select(x => x.ToCourseMask(bucketCount))
             .ToFrozenSet();
-        ControlRarityLookup = BuildControlRarityLookup(this);
-        TotalRaritySum = ControlRarityLookup.Sum();
+
+        var controlRarityLookup = BuildControlRarityLookup(totalEventControlCount, courseMasks);
+        var totalRaritySum = controlRarityLookup.Sum();
+
+        return new(
+            totalEventControlCount,
+            totalRaritySum,
+            bucketCount,
+            courseMasks,
+            controlRarityLookup);
     }
 
     /// <summary>
@@ -29,17 +47,17 @@ internal class BitmaskBeamSearchSolverContext
     /// </summary>
     /// <param name="courses">The set containing all courses.</param>
     /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
-    private static ImmutableArray<float> BuildControlRarityLookup(BitmaskBeamSearchSolverContext context)
+    private static ImmutableArray<float> BuildControlRarityLookup(int totalEventControlCount, FrozenSet<CourseMask> courseMasks)
     {
-        var controlFrequency = new int[context.TotalEventControlCount];
+        var controlFrequency = new int[totalEventControlCount];
         var counter = new FrequencyCounter { Counts = controlFrequency };
-        foreach (var course in context.CourseMasks)
+        foreach (var course in courseMasks)
         {
             course.ForEachControl(ref counter);
         }
 
-        var rarityLookupBuilder = ImmutableArray.CreateBuilder<float>(context.TotalEventControlCount);
-        for (int i = 0; i < context.TotalEventControlCount; i++)
+        var rarityLookupBuilder = ImmutableArray.CreateBuilder<float>(totalEventControlCount);
+        for (int i = 0; i < totalEventControlCount; i++)
         {
             rarityLookupBuilder.Add(controlFrequency[i] > 0 ? MaximumRarity / controlFrequency[i] : 0f);
         }
