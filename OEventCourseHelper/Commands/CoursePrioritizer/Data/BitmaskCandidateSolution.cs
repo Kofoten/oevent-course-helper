@@ -1,5 +1,4 @@
-﻿using OEventCourseHelper.Extensions;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using System.Numerics;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
@@ -21,20 +20,18 @@ internal record BitmaskCandidateSolution(
     /// Creates a new instance of <see cref="BitmaskCandidateSolution"/> with the bits for all controls in the entire
     /// orienteering event set to one and with the total rarity score of all theese controls summarized togheter.
     /// </summary>
-    /// <param name="totalEventControlCount">The total number of controls used by the orienteering event.</param>
-    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <param name="context">The context of the current search.</param>
     /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/>.</returns>
-    public static BitmaskCandidateSolution Initial(int totalEventControlCount, ImmutableArray<float> controlRarityLookup)
+    public static BitmaskCandidateSolution Initial(BitmaskBeamSearchSolverContext context)
     {
-        var bucketCount = totalEventControlCount.Get64BitBucketCount();
-        var unvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(bucketCount);
+        var unvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(context.BucketCount);
 
-        for (int i = 0; i < bucketCount - 1; i++)
+        for (int i = 0; i < context.BucketCount - 1; i++)
         {
             unvisitedControlsMask.Add(ulong.MaxValue);
         }
 
-        var remainder = totalEventControlCount & 63;
+        var remainder = context.TotalEventControlCount & 63;
         if (remainder == 0)
         {
             unvisitedControlsMask.Add(ulong.MaxValue);
@@ -44,7 +41,7 @@ internal record BitmaskCandidateSolution(
             unvisitedControlsMask.Add((1UL << remainder) - 1);
         }
 
-        return new([], unvisitedControlsMask.DrainToImmutable(), controlRarityLookup.Sum());
+        return new([], unvisitedControlsMask.DrainToImmutable(), context.TotalRaritySum);
     }
 
     /// <summary>

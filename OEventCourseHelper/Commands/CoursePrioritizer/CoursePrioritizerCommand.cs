@@ -7,7 +7,6 @@ using OEventCourseHelper.Logging;
 using OEventCourseHelper.Xml.Iof;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Collections.Frozen;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer;
 
@@ -30,20 +29,18 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
+        var filter = new CourseMaskBuilderFilter(true, [.. settings.Filters]);
+        var courseReader = new CourseMaskNodeReader(filter);
         var iofReader = IOFXmlReader.Create();
-        var courseReader = new CourseMaskNodeReader();
         if (!iofReader.TryStream(settings.IofXmlFilePath, courseReader, out var errors))
         {
             logger.FailedToLoadFile(settings.IofXmlFilePath, errors.FormatErrors());
             return ExitCode.FailedToLoadFile;
         }
 
-        var courseReaderResult = courseReader.GetResult();
-        var filter = new CourseMaskFilter(true, [.. settings.Filters]);
-        var filteredCourses = filter.Filter(courseReaderResult.CourseMasks).ToFrozenSet();
-
-        var solver = new BitmaskBeamSearchSolver(settings.BeamWidth, courseReaderResult.TotalEventControlCount);
-        if (!solver.TrySolve(filteredCourses, out var result))
+        var solver = new BitmaskBeamSearchSolver(settings.BeamWidth);
+        var solverContext = courseReader.GetBitmaskBeamSearchSolverContext();
+        if (!solver.TrySolve(solverContext, out var result))
         {
             logger.NoSolutionFound();
             return ExitCode.NoSolutionFound;

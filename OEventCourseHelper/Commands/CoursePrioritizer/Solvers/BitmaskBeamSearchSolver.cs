@@ -5,30 +5,25 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
-internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount)
+internal class BitmaskBeamSearchSolver(int BeamWidth)
 {
-    private const float MaximumRarity = 1.0F;
-
     private static readonly BitmaskCandidateSolution.RarityComparer candidateSolutionComparer = new();
 
     /// <summary>
-    /// Uses a beam search to priotitize <paramref name="courses"/> and marking the courses that are required
+    /// Uses a beam search to priotitize the courses in <paramref name="context"/> and marking the courses that are required
     /// in order to visit all controls in the orienteering event.
     /// </summary>
-    /// <param name="courses">The courses to prioritize.</param>
+    /// <param name="context">The context of the current search.</param>
     /// <param name="solution">The computed solution.</param>
     /// <returns>True if a solution could be found; otherwise False</returns>
-    public bool TrySolve(FrozenSet<CourseMask> courses, [NotNullWhen(true)] out CourseResult[]? solution)
+    public bool TrySolve(BitmaskBeamSearchSolverContext context, [NotNullWhen(true)] out CourseResult[]? solution)
     {
-        // Create the control rarity lookup.
-        var controlRarityLookup = BuildControlRarityLookup(courses);
-
         // Compute dominated courses
         var dominatedCourses = new List<CourseMask>();
         var availableCourses = new List<CourseMask>();
-        foreach (var course in courses)
+        foreach (var course in context.CourseMasks)
         {
-            if (IsDominated(course, courses, controlRarityLookup))
+            if (IsDominated(course, context))
             {
                 dominatedCourses.Add(course);
             }
@@ -39,7 +34,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         }
 
         // Perform the beam search to get the required courses ordered by rarity.
-        var requiredCourses = FindRequiredCourseOrder(availableCourses, controlRarityLookup);
+        var requiredCourses = FindRequiredCourseOrder(availableCourses, context);
         if (requiredCourses is null)
         {
             solution = null;
@@ -69,11 +64,11 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
     /// based on the rarity of the courses controls using a beam search algorithm.
     /// </summary>
     /// <param name="courses">The set containing all course masks.</param>
-    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <param name="context">The context of the current search.</param>
     /// <returns>The required courses ordered by their respective priority.</returns>
-    private ImmutableList<string>? FindRequiredCourseOrder(IEnumerable<CourseMask> courses, ImmutableArray<float> controlRarityLookup)
+    private ImmutableList<string>? FindRequiredCourseOrder(IEnumerable<CourseMask> courses, BitmaskBeamSearchSolverContext context)
     {
-        var initialSolution = BitmaskCandidateSolution.Initial(TotalEventControlCount, controlRarityLookup);
+        var initialSolution = BitmaskCandidateSolution.Initial(context);
         ImmutableList<BitmaskCandidateSolution> beam = [initialSolution];
 
         while (beam.Count > 0)
@@ -95,7 +90,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
                         continue;
                     }
 
-                    var rarityGain = candidate.GetPotentialRarityGain(course, controlRarityLookup);
+                    var rarityGain = candidate.GetPotentialRarityGain(course, context.ControlRarityLookup);
                     if (rarityGain <= 0.0F)
                     {
                         continue;
@@ -107,7 +102,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
                         continue;
                     }
 
-                    var expanded = candidate.AddCourse(course, controlRarityLookup);
+                    var expanded = candidate.AddCourse(course, context.ControlRarityLookup);
                     beamBuilder.Insert(expanded);
                 }
             }
@@ -131,15 +126,11 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
     /// Calculates if the provided <paramref name="course"/> is dominated by any other <see cref="CourseMask"/> in <paramref name="allCourses"/>.
     /// </summary>
     /// <param name="course">The <see cref="CourseMask"> to check.</param>
-    /// <param name="allCourses">The set containing all course masks.</param>
-    /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
+    /// <param name="context">The context of the current search.</param>
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
-    private static bool IsDominated(
-        CourseMask course,
-        FrozenSet<CourseMask> allCourses,
-        ImmutableArray<float> controlRarityLookup)
+    private static bool IsDominated(CourseMask course, BitmaskBeamSearchSolverContext context)
     {
-        var seeker = new RarestSeeker(controlRarityLookup);
+        var seeker = new RarestSeeker(context.ControlRarityLookup);
         course.ForEachControl(ref seeker);
 
         if (seeker.IndexOfRarest == -1)
@@ -150,7 +141,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         int bucketIndex = seeker.IndexOfRarest >> 6;
         ulong bitMask = 1UL << (seeker.IndexOfRarest & 63);
 
-        foreach (var other in allCourses)
+        foreach (var other in context.CourseMasks)
         {
             if (ReferenceEquals(course, other))
             {
@@ -172,29 +163,6 @@ internal class BitmaskBeamSearchSolver(int BeamWidth, int TotalEventControlCount
         }
 
         return false;
-    }
-
-    /// <summary>
-    /// Builds an <see cref="ImmutableArray{float}"/> containing each controls rarity score mapped to it's global index value.
-    /// </summary>
-    /// <param name="courses">The set containing all courses.</param>
-    /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
-    private ImmutableArray<float> BuildControlRarityLookup(IEnumerable<CourseMask> courses)
-    {
-        var controlFrequency = new int[TotalEventControlCount];
-        var counter = new FrequencyCounter { Counts = controlFrequency };
-        foreach (var course in courses)
-        {
-            course.ForEachControl(ref counter);
-        }
-
-        var rarityLookupBuilder = ImmutableArray.CreateBuilder<float>(TotalEventControlCount);
-        for (int i = 0; i < TotalEventControlCount; i++)
-        {
-            rarityLookupBuilder.Add(controlFrequency[i] > 0 ? MaximumRarity / controlFrequency[i] : 0f);
-        }
-
-        return rarityLookupBuilder.DrainToImmutable();
     }
 
     /// <summary>

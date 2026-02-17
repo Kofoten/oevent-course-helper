@@ -17,7 +17,7 @@ public class CourseMaskFilterTests
             new("Course 3", [2Ul], 1),
         };
 
-        var filter = new CourseMaskFilter(true, ["Course"]);
+        var filter = new CourseMaskBuilderFilter(true, ["Course"]);
 
         // Act
         var actual = filter.Filter(courseMasks).ToList();
@@ -39,7 +39,7 @@ public class CourseMaskFilterTests
             new("Course 3", [2Ul], 1),
         };
 
-        var filter = new CourseMaskFilter(true, ["Course"]);
+        var filter = new CourseMaskBuilderFilter(true, ["Course"]);
 
         // Act
         var actual = filter.Filter(courseMasks).ToList();
