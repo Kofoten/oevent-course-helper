@@ -82,8 +82,16 @@ public class BitmaskCandidateSolutionTests
     }
 
     [Fact]
-    public void ContainsCourse_ShouldReturnTrue()
+    public void ContainsCourseMask_ShouldReturnTrue()
     {
-        throw new NotImplementedException();
+        // Setup
+        var course = new CourseMask(new CourseMask.CourseMaskId(0), "A", [1UL], 1);
+        var solution = new BitmaskCandidateSolution([0], [1UL], [1UL], 0.0F);
+
+        // Act
+        var actual = solution.ContainsCourseMask(course);
+
+        // Assert
+        actual.Should().BeTrue();
     }
 }
