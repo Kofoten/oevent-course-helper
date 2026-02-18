@@ -21,7 +21,7 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXIsNull()
     {
         // Act
-        var actual = comparer.Compare(null, new BitmaskCandidateSolution([], [], 0));
+        var actual = comparer.Compare(null, new BitmaskCandidateSolution([], [], [], 0));
 
         // Assert
         actual.Should().BeLessThan(0);
@@ -31,7 +31,7 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnPositive_WhenYIsNull()
     {
         // Act
-        var actual = comparer.Compare(new BitmaskCandidateSolution([], [], 0), null);
+        var actual = comparer.Compare(new BitmaskCandidateSolution([], [], [], 0), null);
 
         // Assert
         actual.Should().BeGreaterThan(0);
@@ -41,8 +41,8 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXHasLowerRarityScore()
     {
         // Setup
-        var x = new BitmaskCandidateSolution([], [], 0.5F);
-        var y = new BitmaskCandidateSolution([], [], 1.0F);
+        var x = new BitmaskCandidateSolution([], [], [], 0.5F);
+        var y = new BitmaskCandidateSolution([], [], [], 1.0F);
 
         // Act
         var actual = comparer.Compare(x, y);
@@ -55,8 +55,8 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenRarityScoreIsEqualAndXHasFewerCourses()
     {
         // Setup
-        var x = new BitmaskCandidateSolution(["A"], [], 0.5F);
-        var y = new BitmaskCandidateSolution(["B", "C"], [], 0.5F);
+        var x = new BitmaskCandidateSolution([0], [], [], 0.5F);
+        var y = new BitmaskCandidateSolution([1, 2], [], [], 0.5F);
 
         // Act
         var actual = comparer.Compare(x, y);

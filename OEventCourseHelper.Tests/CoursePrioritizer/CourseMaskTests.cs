@@ -9,8 +9,8 @@ public class CourseMaskTests
     public void IsSubsetOf_ShouldReturnTrue()
     {
         // Setup
-        var a = new CourseMask("A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
-        var b = new CourseMask("B", [10UL, 10Ul], 4);
+        var a = new CourseMask(new CourseMask.CourseMaskId(0), "A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var b = new CourseMask(new CourseMask.CourseMaskId(1), "B", [10UL, 10Ul], 4);
 
         // Act
         var actual = b.IsSubsetOf(a);
@@ -23,8 +23,8 @@ public class CourseMaskTests
     public void IsSubsetOf_ShouldReturnFalse()
     {
         // Setup
-        var a = new CourseMask("A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
-        var b = new CourseMask("B", [5UL, 5Ul], 4);
+        var a = new CourseMask(new CourseMask.CourseMaskId(0), "A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var b = new CourseMask(new CourseMask.CourseMaskId(1), "B", [5UL, 5Ul], 4);
 
         // Act
         var actual = b.IsSubsetOf(a);
@@ -37,8 +37,8 @@ public class CourseMaskTests
     public void IsIdenticalTo_ShouldReturnTrue()
     {
         // Setup
-        var a = new CourseMask("A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
-        var b = new CourseMask("B", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var a = new CourseMask(new CourseMask.CourseMaskId(0), "A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var b = new CourseMask(new CourseMask.CourseMaskId(1), "B", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
 
         // Act
         var actual = a.IsIdenticalTo(b);
@@ -51,8 +51,8 @@ public class CourseMaskTests
     public void IsIdenticalTo_ShouldReturnFalse()
     {
         // Setup
-        var a = new CourseMask("A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
-        var b = new CourseMask("B", [10UL, 10Ul], 4);
+        var a = new CourseMask(new CourseMask.CourseMaskId(0), "A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var b = new CourseMask(new CourseMask.CourseMaskId(1), "B", [10UL, 10Ul], 4);
 
         // Act
         var actual = a.IsIdenticalTo(b);
@@ -66,7 +66,7 @@ public class CourseMaskTests
     {
         // Setup
         var actual = new ulong[2];
-        var a = new CourseMask("A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
+        var a = new CourseMask(new CourseMask.CourseMaskId(0), "A", [0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL], 64);
         var processor = new TestProcessor()
         {
             Copy = actual,
@@ -84,7 +84,7 @@ public class CourseMaskTests
     {
         public ulong[] Copy;
 
-        public readonly void Process(int index)
+        public readonly void Process(int index, CourseMask _)
         {
             var wordIndex = index >> 6;
             var bitIndex = index & 63;

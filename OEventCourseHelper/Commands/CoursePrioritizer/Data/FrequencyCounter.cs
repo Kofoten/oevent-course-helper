@@ -3,9 +3,8 @@
 /// <summary>
 /// Processor to add 1 to an index in an integer array matching the controls index.
 /// </summary>
-struct FrequencyCounter : CourseMask.IProcessor
+/// <param name="Counts">The array of counters for each control.</param>
+internal struct FrequencyCounter(int[] Counts) : CourseMask.IProcessor
 {
-    public int[] Counts;
-
-    public readonly void Process(int index) => Counts[index]++;
+    public readonly void Process(int index, CourseMask _) => Counts[index]++;
 }

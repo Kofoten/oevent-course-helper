@@ -1,7 +1,6 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
-using System.Collections.Frozen;
 using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Tests.CoursePrioritizer;
@@ -14,10 +13,10 @@ public class BitmaskBeamSearchSolverTests
         // Setup
         var courseMasks = new CourseMask[]
         {
-            new("Dominated", [5UL], 2), // Mask 101000
-            new("Longest", [21Ul], 3),  // Mask 101010
-            new("Control", [18Ul], 2),  // Mask 010010
-            new("Rarest", [40UL], 2),   // Mask 000101
+            new(new CourseMask.CourseMaskId(0), "Dominated", [5UL], 2), // Mask 101000
+            new(new CourseMask.CourseMaskId(1), "Longest", [21Ul], 3),  // Mask 101010
+            new(new CourseMask.CourseMaskId(2), "Control", [18Ul], 2),  // Mask 010010
+            new(new CourseMask.CourseMaskId(3), "Rarest", [40UL], 2),   // Mask 000101
         };
 
         ImmutableArray<float> controlRarityLookup = [0.5F, 1.0F, 0.5F, 1.0F, 0.5F, 1.0F];
@@ -27,8 +26,17 @@ public class BitmaskBeamSearchSolverTests
             6,
             controlRarityLookup.Sum(),
             1,
-            courseMasks.ToFrozenSet(),
-            controlRarityLookup);
+            1,
+            [.. courseMasks],
+            controlRarityLookup,
+            [
+                [3UL],
+                [4Ul],
+                [3UL],
+                [8UL],
+                [6UL],
+                [8UL],
+            ]);
 
         // Act
         var solutionFound = solver.TrySolve(context, out var actual);

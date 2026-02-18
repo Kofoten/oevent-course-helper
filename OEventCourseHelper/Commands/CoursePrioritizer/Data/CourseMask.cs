@@ -1,12 +1,13 @@
 ﻿using System.Collections.Immutable;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
 /// <summary>
 /// Contains the bitmask for the course, the name of the course and the number of controls in the course.
 /// </summary>
-internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask, int ControlCount)
+internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, ImmutableArray<ulong> ControlMask, int ControlCount)
 {
     /// <summary>
     /// Loops through all the controls in this <see cref="CourseMask"/> one by one for processing by a provided processor.
@@ -22,7 +23,7 @@ internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask,
             {
                 int bit = BitOperations.TrailingZeroCount(bucket);
                 int index = (i << 6) | bit;
-                processor.Process(index);
+                processor.Process(index, this);
                 bucket &= ~(1UL << bit);
             }
         }
@@ -79,26 +80,27 @@ internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask,
         /// </summary>
         /// <param name="bucketCount">Total count of 64 bit buckets.</param>
         /// <returns>An instance of <see cref="CourseMask"/>.</returns>
-        public CourseMask ToCourseMask(int bucketCount)
+        public CourseMask ToCourseMask(int bucketCount, int courseIndex)
         {
-            var maskBuilder = ImmutableArray.CreateBuilder<ulong>(bucketCount);
-            for (int i = 0; i < bucketCount; i++)
+            var mask = new ulong[bucketCount];
+            for (int i = 0; i < ControlMask.Count; i++)
             {
-                if (i < ControlMask.Count)
-                {
-                    maskBuilder.Add(ControlMask[i]);
-                }
-                else
-                {
-                    maskBuilder.Add(0UL);
-                }
+                mask[i] = ControlMask[i];
             }
 
             return new CourseMask(
+                new CourseMaskId(courseIndex),
                 CourseName,
-                maskBuilder.DrainToImmutable(),
+                ImmutableCollectionsMarshal.AsImmutableArray(mask),
                 ControlCount);
         }
+    }
+
+    internal readonly struct CourseMaskId(int index)
+    {
+        public int Index { get; private init; } = index;
+        public int BucketIndex { get; private init; } = index >> 6;
+        public ulong BucketMask { get; private init; } = 1UL << (index & 63);
     }
 
     /// <summary>
@@ -106,6 +108,6 @@ internal record CourseMask(string CourseName, ImmutableArray<ulong> ControlMask,
     /// </summary>
     internal interface IProcessor
     {
-        void Process(int controlIndex);
+        void Process(int controlIndex, CourseMask courseMask);
     }
 }

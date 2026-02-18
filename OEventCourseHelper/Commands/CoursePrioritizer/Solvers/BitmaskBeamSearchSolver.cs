@@ -85,7 +85,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
 
                 foreach (var course in courses)
                 {
-                    if (candidate.Courses.Contains(course.CourseName))
+                    if (candidate.ContainsCourseMask(course))
                     {
                         continue;
                     }
@@ -102,7 +102,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
                         continue;
                     }
 
-                    var expanded = candidate.AddCourse(course, context.ControlRarityLookup);
+                    var expanded = candidate.AddCourse(course, context);
                     beamBuilder.Insert(expanded);
                 }
             }
@@ -119,7 +119,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
             return null;
         }
 
-        return beam[0].Courses;
+        return [.. beam[0].CourseOrder.Select(i => context.CourseMasks[i].CourseName)];
     }
 
     /// <summary>

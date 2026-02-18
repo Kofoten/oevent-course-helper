@@ -43,18 +43,18 @@ public class BitmaskBeamSearchSolverContextTests
 
         // Assert
         actual.TotalEventControlCount.Should().Be(6);
-        actual.TotalRaritySum.Should().Be(4.5F);
-        actual.BucketCount.Should().Be(1);
+        actual.TotalControlRaritySum.Should().Be(4.5F);
+        actual.ControlMaskBucketCount.Should().Be(1);
         actual.ControlRarityLookup.Should().HaveCount(6);
         actual.ControlRarityLookup.Should().BeEquivalentTo(
             [0.5F, 1.0F, 0.5F, 1.0F, 0.5F, 1.0F],
             o => o.WithStrictOrdering());
         actual.CourseMasks.Should().HaveCount(4);
         actual.CourseMasks.Should().BeEquivalentTo([
-            new CourseMask("Course 1", [5UL], 2),
-            new CourseMask("Course 2", [21Ul], 3),
-            new CourseMask("Course 3", [18Ul], 2),
-            new CourseMask("Course 4", [40UL], 2),
+            new CourseMask(new CourseMask.CourseMaskId(0), "Course 1", [5UL], 2),
+            new CourseMask(new CourseMask.CourseMaskId(1), "Course 2", [21Ul], 3),
+            new CourseMask(new CourseMask.CourseMaskId(2), "Course 3", [18Ul], 2),
+            new CourseMask(new CourseMask.CourseMaskId(3), "Course 4", [40UL], 2),
         ], o => o.WithoutStrictOrdering());
     }
 }

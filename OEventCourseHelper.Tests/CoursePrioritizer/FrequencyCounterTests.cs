@@ -10,16 +10,14 @@ public class FrequencyCounterTests
     {
         // Setup
         var frequencies = new int[4];
-        var counter = new FrequencyCounter()
-        {
-            Counts = frequencies,
-        };
+        var counter = new FrequencyCounter(frequencies);
+        var courseMask = new CourseMask(new CourseMask.CourseMaskId(0), "Dummy", [], 0);
 
         // Act
-        counter.Process(0);
-        counter.Process(1);
-        counter.Process(1);
-        counter.Process(3);
+        counter.Process(0, courseMask);
+        counter.Process(1, courseMask);
+        counter.Process(1, courseMask);
+        counter.Process(3, courseMask);
 
         // Assert
         frequencies[0].Should().Be(1);
