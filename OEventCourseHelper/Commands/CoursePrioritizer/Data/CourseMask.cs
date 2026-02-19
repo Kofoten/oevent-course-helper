@@ -1,33 +1,29 @@
-﻿using System.Collections.Immutable;
-using System.Numerics;
-using System.Runtime.InteropServices;
-
-namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
+﻿namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
 /// <summary>
 /// Contains the bitmask for the course, the name of the course and the number of controls in the course.
 /// </summary>
-internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, ImmutableArray<ulong> ControlMask, int ControlCount)
+internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, BitMask ControlMask, int ControlCount)
 {
     /// <summary>
     /// Loops through all the controls in this <see cref="CourseMask"/> one by one for processing by a provided processor.
     /// </summary>
     /// <typeparam name="T">The type of processor to use.</typeparam>
     /// <param name="processor">The processor to use.</param>
-    public void ForEachControl<T>(ref T processor) where T : struct, IProcessor
-    {
-        for (int i = 0; i < ControlMask.Length; i++)
-        {
-            ulong bucket = ControlMask[i];
-            while (bucket != 0)
-            {
-                int bit = BitOperations.TrailingZeroCount(bucket);
-                int index = (i << 6) | bit;
-                processor.Process(index, this);
-                bucket &= ~(1UL << bit);
-            }
-        }
-    }
+    //public void ForEachControl<T>(ref T processor) where T : struct, IProcessor
+    //{
+    //    for (int i = 0; i < ControlMask[] .Length; i++)
+    //    {
+    //        ulong bucket = ControlMask[i];
+    //        while (bucket != 0)
+    //        {
+    //            int bit = BitOperations.TrailingZeroCount(bucket);
+    //            int index = (i << 6) | bit;
+    //            processor.Process(index, this);
+    //            bucket &= ~(1UL << bit);
+    //        }
+    //    }
+    //}
 
     /// <summary>
     /// Checks if <paramref name="other"/> is a subset of this.
@@ -91,7 +87,7 @@ internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, 
             return new CourseMask(
                 new CourseMaskId(courseIndex),
                 CourseName,
-                ImmutableCollectionsMarshal.AsImmutableArray(mask),
+                new BitMask(mask),
                 ControlCount);
         }
     }

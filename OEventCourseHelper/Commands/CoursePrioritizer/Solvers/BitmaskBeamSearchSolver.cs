@@ -155,16 +155,26 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
     private static bool IsDominated(CourseMask course, BitmaskBeamSearchSolverContext context)
     {
-        var seeker = new RarestSeeker(context.ControlRarityLookup);
-        course.ForEachControl(ref seeker);
+        var rarestValue = -1.0F;
+        var indexOfRarest = -1;
+        foreach (var controlIndex in course.ControlMask)
+        {
+            if (controlIndex >= context.ControlRarityLookup.Length)
+            {
+                continue;
+            }
 
-        if (seeker.IndexOfRarest == -1)
+            if (rarestValue < context.ControlRarityLookup[controlIndex])
+            {
+                rarestValue = context.ControlRarityLookup[controlIndex];
+                indexOfRarest = controlIndex;
+            }
+        }
+
+        if (indexOfRarest == -1)
         {
             return true;
         }
-
-        int bucketIndex = seeker.IndexOfRarest >> 6;
-        ulong bitMask = 1UL << (seeker.IndexOfRarest & 63);
 
         foreach (var other in context.CourseMasks)
         {
@@ -173,7 +183,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
                 continue;
             }
 
-            if ((other.ControlMask[bucketIndex] & bitMask) != 0)
+            if (other.ControlMask[indexOfRarest])
             {
                 if (course.IsSubsetOf(other))
                 {

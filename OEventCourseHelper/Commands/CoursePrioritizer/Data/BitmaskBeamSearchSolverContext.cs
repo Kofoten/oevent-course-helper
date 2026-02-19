@@ -34,12 +34,19 @@ internal class BitmaskBeamSearchSolverContext(
         var controlMaskBucketCount = ((totalEventControlCount - 1) >> 6) + 1;
         var courseIdMaskBucketCount = ((courseCount - 1) >> 6) + 1;
         var courseIdInvertedIndexCache = new ulong[totalEventControlCount][];
-        var invertedIndexProcessor = new InvertedIndexProcessor(courseIdInvertedIndexCache, courseIdMaskBucketCount);
         var courseMasks = courseMasksBuilders
             .Select((x, i) =>
             {
                 var courseMask = x.ToCourseMask(controlMaskBucketCount, i);
-                courseMask.ForEachControl(ref invertedIndexProcessor);
+                foreach (var controlIndex in courseMask.ControlMask)
+                {
+                    if (courseIdInvertedIndexCache[controlIndex] is null || courseIdInvertedIndexCache.Length == 0)
+                    {
+                        courseIdInvertedIndexCache[controlIndex] = new ulong[courseIdMaskBucketCount];
+                    }
+
+                    courseIdInvertedIndexCache[controlIndex][courseMask.CourseId.BucketIndex] |= courseMask.CourseId.BucketMask;
+                }
                 return courseMask;
             })
             .ToImmutableArray();
@@ -70,17 +77,26 @@ internal class BitmaskBeamSearchSolverContext(
     /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
     private static ImmutableArray<float> BuildControlRarityLookup(int totalEventControlCount, IEnumerable<CourseMask> courseMasks)
     {
-        var controlFrequency = new int[totalEventControlCount];
-        var counter = new FrequencyCounter(controlFrequency);
+        var controlFrequencies = new int[totalEventControlCount];
         foreach (var course in courseMasks)
         {
-            course.ForEachControl(ref counter);
+            foreach (var controlIndex in course.ControlMask)
+            {
+                controlFrequencies[controlIndex]++;
+            }
         }
 
         var rarityLookup = new float[totalEventControlCount];
         for (int i = 0; i < totalEventControlCount; i++)
         {
-            rarityLookup[i] = (controlFrequency[i] > 0 ? MaximumRarity / controlFrequency[i] : 0.0F);
+            if (controlFrequencies[i] == 0)
+            {
+                rarityLookup[i] = 0.0F;
+            }
+            else
+            {
+                rarityLookup[i] = MaximumRarity / controlFrequencies[i];
+            }
         }
 
         return ImmutableCollectionsMarshal.AsImmutableArray(rarityLookup);
