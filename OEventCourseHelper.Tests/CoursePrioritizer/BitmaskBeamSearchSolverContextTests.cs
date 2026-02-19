@@ -51,10 +51,10 @@ public class BitmaskBeamSearchSolverContextTests
             o => o.WithStrictOrdering());
         actual.CourseMasks.Should().HaveCount(4);
         actual.CourseMasks.Should().BeEquivalentTo([
-            new CourseMask(new CourseMask.CourseMaskId(0), "Course 1", [5UL], 2),
-            new CourseMask(new CourseMask.CourseMaskId(1), "Course 2", [21Ul], 3),
-            new CourseMask(new CourseMask.CourseMaskId(2), "Course 3", [18Ul], 2),
-            new CourseMask(new CourseMask.CourseMaskId(3), "Course 4", [40UL], 2),
+            new CourseMask(new CourseMask.CourseMaskId(0), "Course 1", new([5UL]), 2),
+            new CourseMask(new CourseMask.CourseMaskId(1), "Course 2", new([21Ul]), 3),
+            new CourseMask(new CourseMask.CourseMaskId(2), "Course 3", new([18Ul]), 2),
+            new CourseMask(new CourseMask.CourseMaskId(3), "Course 4", new([40UL]), 2),
         ], o => o.WithoutStrictOrdering());
     }
 }

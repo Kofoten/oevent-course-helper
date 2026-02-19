@@ -89,22 +89,20 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
                 }
 
                 var validCoursesMask = new ulong[context.CourseIdMaskBucketCount];
-                var unvisitedEnumerator = new MaskEnumerator(candidate.UnvisitedControlsMask);
-                while (unvisitedEnumerator.MoveNext())
+                foreach (var controlIndex in candidate.UnvisitedControlsMask)
                 {
-                    var coursesWithControl = context.CourseInvertedIndex[unvisitedEnumerator.Current];
+                    var coursesWithControl = context.CourseInvertedIndex[controlIndex];
                     for (int i = 0; i < context.CourseIdMaskBucketCount; i++)
                     {
                         validCoursesMask[i] |= coursesWithControl[i];
                     }
                 }
 
-                var courseEnumerator = new MaskEnumerator(ImmutableCollectionsMarshal.AsImmutableArray(validCoursesMask));
-                while (courseEnumerator.MoveNext())
+                foreach (var courseIndex in BitMask.Create(validCoursesMask))
                 {
-                    var course = context.CourseMasks[courseEnumerator.Current];
+                    var course = context.CourseMasks[courseIndex];
 
-                    if (candidate.ContainsCourseMask(course))
+                    if (candidate.IncludedCoursesMask[course.CourseId.Index])
                     {
                         continue;
                     }
@@ -185,9 +183,9 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
 
             if (other.ControlMask[indexOfRarest])
             {
-                if (course.IsSubsetOf(other))
+                if (course.ControlMask.IsSubsetOf(other.ControlMask))
                 {
-                    if (!course.IsIdenticalTo(other)
+                    if (!course.ControlMask.IsIdenticalTo(other.ControlMask)
                         ||
                         string.CompareOrdinal(course.CourseName, other.CourseName) > 0)
                     {

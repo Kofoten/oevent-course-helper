@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
@@ -9,14 +8,14 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 /// </summary>
 internal record BitmaskCandidateSolution(
     ImmutableList<CourseMask> CourseOrder,
-    ImmutableArray<ulong> IncludedCoursesMask,
-    ImmutableArray<ulong> UnvisitedControlsMask,
+    BitMask IncludedCoursesMask,
+    BitMask UnvisitedControlsMask,
     float RarityScore)
 {
     /// <summary>
     /// Indicates if this solution covers all controls used in the orienteering event.
     /// </summary>
-    public bool IsComplete => UnvisitedControlsMask.All(x => x == 0);
+    public bool IsComplete => UnvisitedControlsMask.IsZero;
 
     /// <summary>
     /// Returns the current amount of courses required for the solution.
@@ -31,25 +30,9 @@ internal record BitmaskCandidateSolution(
     /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/>.</returns>
     public static BitmaskCandidateSolution Initial(BitmaskBeamSearchSolverContext context)
     {
-        var unvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(context.ControlMaskBucketCount);
-
-        for (int i = 0; i < context.ControlMaskBucketCount - 1; i++)
-        {
-            unvisitedControlsMask.Add(ulong.MaxValue);
-        }
-
-        var remainder = context.TotalEventControlCount & 63;
-        if (remainder == 0)
-        {
-            unvisitedControlsMask.Add(ulong.MaxValue);
-        }
-        else
-        {
-            unvisitedControlsMask.Add((1UL << remainder) - 1);
-        }
-
-        var includedCoursesMask = ImmutableCollectionsMarshal.AsImmutableArray(new ulong[context.CourseIdMaskBucketCount]);
-        return new([], includedCoursesMask, unvisitedControlsMask.DrainToImmutable(), context.TotalControlRaritySum);
+        var unvisitedControlMask = BitMask.Fill(context.TotalEventControlCount);
+        var includedCoursesMask = BitMask.Create(new ulong[context.CourseIdMaskBucketCount]);
+        return new([], includedCoursesMask, unvisitedControlMask, context.TotalControlRaritySum);
     }
 
     /// <summary>
@@ -61,18 +44,8 @@ internal record BitmaskCandidateSolution(
     /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/> containing the modified state.</returns>
     public BitmaskCandidateSolution AddCourse(CourseMask course, BitmaskBeamSearchSolverContext context)
     {
-        var newUnvisitedControlsMask = ImmutableArray.CreateBuilder<ulong>(UnvisitedControlsMask.Length);
-        var rarityGain = 0.0F;
-
-        for (int i = 0; i < UnvisitedControlsMask.Length; i++)
-        {
-            ulong unvisitedBucket = UnvisitedControlsMask[i];
-            ulong courseBucket = course.ControlMask[i];
-
-            rarityGain += GetBucketRarityGain(i, unvisitedBucket, courseBucket, context.ControlRarityLookup);
-
-            newUnvisitedControlsMask.Add(unvisitedBucket & ~courseBucket);
-        }
+        var newUnvisitedControlsMask = UnvisitedControlsMask.AndNot(course.ControlMask);
+        var rarityGain = GetPotentialRarityGain(course, context.ControlRarityLookup);
 
         var newIncludedCoursesMask = new ulong[context.CourseIdMaskBucketCount];
         for (int i = 0; i < context.CourseIdMaskBucketCount; i++)
@@ -90,7 +63,7 @@ internal record BitmaskCandidateSolution(
         return new BitmaskCandidateSolution(
             CourseOrder.Add(course),
             ImmutableCollectionsMarshal.AsImmutableArray(newIncludedCoursesMask),
-            newUnvisitedControlsMask.DrainToImmutable(),
+            newUnvisitedControlsMask,
             RarityScore - rarityGain);
     }
 
@@ -103,52 +76,12 @@ internal record BitmaskCandidateSolution(
     public float GetPotentialRarityGain(CourseMask course, ImmutableArray<float> controlRarityLookup)
     {
         var rarityGain = 0.0F;
-        for (int i = 0; i < UnvisitedControlsMask.Length; i++)
+        foreach (var controlIndex in course.ControlMask)
         {
-            ulong unvisitedBucket = UnvisitedControlsMask[i];
-            ulong courseBucket = course.ControlMask[i];
-
-            rarityGain += GetBucketRarityGain(i, unvisitedBucket, courseBucket, controlRarityLookup);
-        }
-
-        return rarityGain;
-    }
-
-    /// <summary>
-    /// Checks if the solution already contains the specified <see cref="CourseMask"/>.
-    /// </summary>
-    /// <param name="courseMask">The <see cref="CourseMask"/> to check.</param>
-    /// <returns>True if the solution already contains the <see cref="CourseMask"/>; otherwise False.</returns>
-    public bool ContainsCourseMask(CourseMask courseMask)
-    {
-        var result = IncludedCoursesMask[courseMask.CourseId.BucketIndex] & courseMask.CourseId.BucketMask;
-        return result != 0;
-    }
-
-    /// <summary>
-    /// Internal method for calculating the rarity gain between two buckets in order for <see cref="AddCourse"/>
-    /// and <see cref="GetPotentialRarityGain"/> to compute the exact same value.
-    /// </summary>
-    private static float GetBucketRarityGain(
-        int bucketIndex,
-        ulong unvisitedBucket,
-        ulong courseBucket,
-        ImmutableArray<float> controlRarityLookup)
-    {
-        var rarityGain = 0.0F;
-
-        ulong visits = unvisitedBucket & courseBucket;
-        while (visits != 0)
-        {
-            int bit = BitOperations.TrailingZeroCount(visits);
-            int globalControlIndex = (bucketIndex << 6) | bit;
-
-            if (globalControlIndex < controlRarityLookup.Length)
+            if (UnvisitedControlsMask[controlIndex])
             {
-                rarityGain += controlRarityLookup[globalControlIndex];
+                rarityGain += controlRarityLookup[controlIndex];
             }
-
-            visits &= ~(1UL << bit);
         }
 
         return rarityGain;

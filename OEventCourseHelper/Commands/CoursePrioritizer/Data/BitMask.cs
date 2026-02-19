@@ -1,27 +1,126 @@
 ﻿using System.Collections.Immutable;
 using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal readonly struct BitMask(ImmutableArray<ulong> Buckets)
+internal readonly record struct BitMask
 {
-    public BitMask(ulong[] buckets)
-        : this(ImmutableCollectionsMarshal.AsImmutableArray(buckets))
+    public BitMask(ImmutableArray<ulong> buckets)
     {
+        Buckets = buckets;
     }
 
-    //public BitMask(int setBits)
-    //{
-    //}
+    public readonly ImmutableArray<ulong> Buckets { get; private init; }
 
     public bool this[int index] => (Buckets[index >> 6] & (1UL << (index & 63))) != 0;
 
     public bool IsZero => Buckets.All(x => x == 0);
 
+    public int BucketCount => Buckets.Length;
+
     public BitMaskEnumerator GetEnumerator() => new(Buckets);
 
+    public BitMask And(BitMask other)
+    {
+        ThrowIfDifferentLength(other, nameof(And));
+
+        var result = new ulong[BucketCount];
+        for (int i = 0; i < BucketCount; i++)
+        {
+            result[i] = Buckets[i] & other.Buckets[i];
+        }
+
+        return Create(result);
+    }
+
+    public BitMask AndNot(BitMask other)
+    {
+        ThrowIfDifferentLength(other, nameof(AndNot));
+
+        var result = new ulong[BucketCount];
+        for (int i = 0; i < BucketCount; i++)
+        {
+            result[i] = Buckets[i] & ~other.Buckets[i];
+        }
+
+        return Create(result);
+    }
+
+    /// <summary>
+    /// Checks if <paramref name="other"/> is a subset of this.
+    /// </summary>
+    /// <param name="other">The <see cref="BitMask"/> to check.</param>
+    /// <returns>True if <paramref name="other"/> is a subset of this; otherwise False.</returns>
+    public bool IsSubsetOf(BitMask other)
+    {
+        ThrowIfDifferentLength(other, nameof(IsSubsetOf));
+
+        for (int i = 0; i < BucketCount; i++)
+        {
+            if ((Buckets[i] & ~other.Buckets[i]) != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Checks if <paramref name="other"/> is identical to this.
+    /// </summary>
+    /// <param name="other">The <see cref="BitMask"/> to compare to.</param>
+    /// <returns>True if <paramref name="other"/> is identical to this; otherwise False.</returns>
+    public bool IsIdenticalTo(BitMask other)
+    {
+        ThrowIfDifferentLength(other, nameof(IsIdenticalTo));
+
+        for (int i = 0; i < BucketCount; i++)
+        {
+            if (Buckets[i] != other.Buckets[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void ThrowIfDifferentLength(BitMask other, string operationName)
+    {
+        if (BucketCount != other.BucketCount)
+        {
+            throw new InvalidOperationException($"Can not perform '{operationName}' on BitMasks of different lengths.");
+        }
+    }
+
     public static int GetBucketCount(int bitCount) => ((bitCount - 1) >> 6) + 1;
+
+    public static BitMask Fill(int count)
+    {
+        var bucketCount = GetBucketCount(count);
+        var mask = new ulong[bucketCount];
+
+        for (int i = 0; i < bucketCount - 1; i++)
+        {
+            mask[i] = ulong.MaxValue;
+        }
+
+        var remainder = count & 63;
+        if (remainder == 0)
+        {
+            mask[^1] = ulong.MaxValue;
+        }
+        else
+        {
+            mask[^1] = (1UL << remainder) - 1;
+        }
+
+        return Create(mask);
+    }
+
+    public static BitMask Create(ReadOnlySpan<ulong> buckets)
+        => new(ImmutableArray.Create(buckets));
 
     public ref struct BitMaskEnumerator(ImmutableArray<ulong> buckets)
     {

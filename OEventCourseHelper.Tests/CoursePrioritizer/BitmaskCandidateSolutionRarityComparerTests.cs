@@ -21,7 +21,7 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXIsNull()
     {
         // Act
-        var actual = comparer.Compare(null, new BitmaskCandidateSolution([], [], [], 0));
+        var actual = comparer.Compare(null, new BitmaskCandidateSolution([], new([]), new([]), 0));
 
         // Assert
         actual.Should().BeLessThan(0);
@@ -31,7 +31,7 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnPositive_WhenYIsNull()
     {
         // Act
-        var actual = comparer.Compare(new BitmaskCandidateSolution([], [], [], 0), null);
+        var actual = comparer.Compare(new BitmaskCandidateSolution([], new([]), new([]), 0), null);
 
         // Assert
         actual.Should().BeGreaterThan(0);
@@ -41,8 +41,8 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXHasLowerRarityScore()
     {
         // Setup
-        var x = new BitmaskCandidateSolution([], [], [], 0.5F);
-        var y = new BitmaskCandidateSolution([], [], [], 1.0F);
+        var x = new BitmaskCandidateSolution([], new([]), new([]), 0.5F);
+        var y = new BitmaskCandidateSolution([], new([]), new([]), 1.0F);
 
         // Act
         var actual = comparer.Compare(x, y);
@@ -55,12 +55,12 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenRarityScoreIsEqualAndXHasFewerCourses()
     {
         // Setup
-        var courseA = new CourseMask(new CourseMask.CourseMaskId(0), "A", [], 0);
-        var courseB = new CourseMask(new CourseMask.CourseMaskId(1), "B", [], 0);
-        var courseC = new CourseMask(new CourseMask.CourseMaskId(2), "C", [], 0);
+        var courseA = new CourseMask(new CourseMask.CourseMaskId(0), "A", new([]), 0);
+        var courseB = new CourseMask(new CourseMask.CourseMaskId(1), "B", new([]), 0);
+        var courseC = new CourseMask(new CourseMask.CourseMaskId(2), "C", new([]), 0);
 
-        var x = new BitmaskCandidateSolution([courseA], [], [], 0.5F);
-        var y = new BitmaskCandidateSolution([courseB, courseC], [], [], 0.5F);
+        var x = new BitmaskCandidateSolution([courseA], new([]), new([]), 0.5F);
+        var y = new BitmaskCandidateSolution([courseB, courseC], new([]), new([]), 0.5F);
 
         // Act
         var actual = comparer.Compare(x, y);
