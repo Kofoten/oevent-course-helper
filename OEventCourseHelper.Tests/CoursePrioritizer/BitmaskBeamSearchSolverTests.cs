@@ -49,4 +49,39 @@ public class BitmaskBeamSearchSolverTests
         actual[2].Should().Be(new BitmaskBeamSearchSolver.CourseResult("Control", true));
         actual[3].Should().Be(new BitmaskBeamSearchSolver.CourseResult("Dominated", false));
     }
+
+    [Fact]
+    public void TrySolve_ShouldSortByAlphabeticalWhenIdentical()
+    {
+        // Setup
+        var courseMasks = new CourseMask[]
+        {
+            new(new CourseMask.CourseMaskId(0), "A", [3UL], 2),
+            new(new CourseMask.CourseMaskId(1), "B", [3Ul], 2),
+        };
+
+        ImmutableArray<float> controlRarityLookup = [0.5F, 0.5F];
+
+        var solver = new BitmaskBeamSearchSolver(1);
+        var context = new BitmaskBeamSearchSolverContext(
+            2,
+            controlRarityLookup.Sum(),
+            1,
+            1,
+            [.. courseMasks],
+            controlRarityLookup,
+            [
+                [3UL],
+                [3Ul],
+            ]);
+
+        // Act
+        var solutionFound = solver.TrySolve(context, out var actual);
+
+        // Assert
+        solutionFound.Should().BeTrue();
+        actual!.Length.Should().Be(2);
+        actual[0].Should().Be(new BitmaskBeamSearchSolver.CourseResult("A", true));
+        actual[1].Should().Be(new BitmaskBeamSearchSolver.CourseResult("B", false));
+    }
 }

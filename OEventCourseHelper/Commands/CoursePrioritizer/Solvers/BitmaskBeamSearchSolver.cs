@@ -2,6 +2,7 @@
 using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
@@ -21,11 +22,13 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
         // Compute dominated courses
         var dominatedCourses = new List<CourseMask>();
         var availableCourses = new List<CourseMask>();
+        var dominatedCourseIdMaskCache = new ulong[context.CourseIdMaskBucketCount];
         foreach (var course in context.CourseMasks)
         {
             if (IsDominated(course, context))
             {
                 dominatedCourses.Add(course);
+                dominatedCourseIdMaskCache[course.CourseId.BucketIndex] |= course.CourseId.BucketMask;
             }
             else
             {
@@ -33,8 +36,10 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
             }
         }
 
+        var dominatedCourseIdMask = ImmutableCollectionsMarshal.AsImmutableArray(dominatedCourseIdMaskCache);
+
         // Perform the beam search to get the required courses ordered by rarity.
-        var requiredCourses = FindRequiredCourseOrder(availableCourses, context);
+        var requiredCourses = FindRequiredCourseOrder(dominatedCourseIdMask, context);
         if (requiredCourses is null)
         {
             solution = null;
@@ -66,7 +71,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
     /// <param name="courses">The set containing all course masks.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>The required courses ordered by their respective priority.</returns>
-    private ImmutableList<string>? FindRequiredCourseOrder(IEnumerable<CourseMask> courses, BitmaskBeamSearchSolverContext context)
+    private ImmutableList<string>? FindRequiredCourseOrder(ImmutableArray<ulong> dominatedCourseIdMask, BitmaskBeamSearchSolverContext context)
     {
         var initialSolution = BitmaskCandidateSolution.Initial(context);
         ImmutableList<BitmaskCandidateSolution> beam = [initialSolution];
@@ -83,9 +88,29 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
                     continue;
                 }
 
-                foreach (var course in courses)
+                var validCoursesMask = new ulong[context.CourseIdMaskBucketCount];
+                var unvisitedEnumerator = new MaskEnumerator(candidate.UnvisitedControlsMask);
+                while (unvisitedEnumerator.MoveNext())
                 {
+                    var coursesWithControl = context.CourseInvertedIndex[unvisitedEnumerator.Current];
+                    for (int i = 0; i < context.CourseIdMaskBucketCount; i++)
+                    {
+                        validCoursesMask[i] |= coursesWithControl[i];
+                    }
+                }
+
+                var courseEnumerator = new MaskEnumerator(ImmutableCollectionsMarshal.AsImmutableArray(validCoursesMask));
+                while (courseEnumerator.MoveNext())
+                {
+                    var course = context.CourseMasks[courseEnumerator.Current];
+
                     if (candidate.ContainsCourseMask(course))
+                    {
+                        continue;
+                    }
+
+                    var isDominatedMask = dominatedCourseIdMask[course.CourseId.BucketIndex] & course.CourseId.BucketMask;
+                    if (isDominatedMask != 0UL)
                     {
                         continue;
                     }
@@ -119,7 +144,7 @@ internal class BitmaskBeamSearchSolver(int BeamWidth)
             return null;
         }
 
-        return [.. beam[0].CourseOrder.Select(i => context.CourseMasks[i].CourseName)];
+        return [.. beam[0].CourseOrder.Select(x => x.CourseName)];
     }
 
     /// <summary>

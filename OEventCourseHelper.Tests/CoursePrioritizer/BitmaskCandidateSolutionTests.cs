@@ -51,7 +51,7 @@ public class BitmaskCandidateSolutionTests
 
         // Assert
         actual.CourseOrder.Should().HaveCount(1);
-        actual.CourseOrder[0].Should().Be(0);
+        actual.CourseOrder[0].Should().Be(course);
         actual.IncludedCoursesMask[0].Should().Be(1Ul);
         actual.UnvisitedControlsMask.Should().HaveCount(1);
         actual.UnvisitedControlsMask[0].Should().Be(12UL);
@@ -86,7 +86,7 @@ public class BitmaskCandidateSolutionTests
     {
         // Setup
         var course = new CourseMask(new CourseMask.CourseMaskId(0), "A", [1UL], 1);
-        var solution = new BitmaskCandidateSolution([0], [1UL], [1UL], 0.0F);
+        var solution = new BitmaskCandidateSolution([course], [1UL], [1UL], 0.0F);
 
         // Act
         var actual = solution.ContainsCourseMask(course);

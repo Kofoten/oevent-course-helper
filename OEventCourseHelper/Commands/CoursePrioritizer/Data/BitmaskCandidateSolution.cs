@@ -8,7 +8,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 /// Contains a possible solution on which courses are required for the test run.
 /// </summary>
 internal record BitmaskCandidateSolution(
-    ImmutableList<int> CourseOrder,
+    ImmutableList<CourseMask> CourseOrder,
     ImmutableArray<ulong> IncludedCoursesMask,
     ImmutableArray<ulong> UnvisitedControlsMask,
     float RarityScore)
@@ -88,7 +88,7 @@ internal record BitmaskCandidateSolution(
         }
 
         return new BitmaskCandidateSolution(
-            CourseOrder.Add(course.CourseId.Index),
+            CourseOrder.Add(course),
             ImmutableCollectionsMarshal.AsImmutableArray(newIncludedCoursesMask),
             newUnvisitedControlsMask.DrainToImmutable(),
             RarityScore - rarityGain);

@@ -55,8 +55,12 @@ public class BitmaskCandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenRarityScoreIsEqualAndXHasFewerCourses()
     {
         // Setup
-        var x = new BitmaskCandidateSolution([0], [], [], 0.5F);
-        var y = new BitmaskCandidateSolution([1, 2], [], [], 0.5F);
+        var courseA = new CourseMask(new CourseMask.CourseMaskId(0), "A", [], 0);
+        var courseB = new CourseMask(new CourseMask.CourseMaskId(1), "B", [], 0);
+        var courseC = new CourseMask(new CourseMask.CourseMaskId(2), "C", [], 0);
+
+        var x = new BitmaskCandidateSolution([courseA], [], [], 0.5F);
+        var y = new BitmaskCandidateSolution([courseB, courseC], [], [], 0.5F);
 
         // Act
         var actual = comparer.Compare(x, y);

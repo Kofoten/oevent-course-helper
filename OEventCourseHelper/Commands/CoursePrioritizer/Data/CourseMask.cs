@@ -98,7 +98,6 @@ internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, 
 
     internal readonly struct CourseMaskId(int index)
     {
-        public int Index { get; private init; } = index;
         public int BucketIndex { get; private init; } = index >> 6;
         public ulong BucketMask { get; private init; } = 1UL << (index & 63);
     }
