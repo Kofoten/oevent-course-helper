@@ -3,7 +3,7 @@
 /// <summary>
 /// Contains the bitmask for the course, the name of the course and the number of controls in the course.
 /// </summary>
-internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, BitMask ControlMask, int ControlCount)
+internal record CourseMask(int CourseIndex, string CourseName, BitMask ControlMask, int ControlCount)
 {
     /// <summary>
     /// Builder for <see cref="CourseMask"/>.
@@ -28,18 +28,11 @@ internal record CourseMask(CourseMask.CourseMaskId CourseId, string CourseName, 
             }
 
             return new CourseMask(
-                new CourseMaskId(courseIndex),
+                courseIndex,
                 CourseName,
                 BitMask.Create(mask),
                 ControlCount);
         }
-    }
-
-    internal readonly struct CourseMaskId(int index)
-    {
-        public int BucketIndex { get; private init; } = index >> 6;
-        public ulong BucketMask { get; private init; } = 1UL << (index & 63);
-        public int Index { get; private init; } = index;
     }
 
     /// <summary>

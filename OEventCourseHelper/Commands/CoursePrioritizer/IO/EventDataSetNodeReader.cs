@@ -21,11 +21,11 @@ internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeRe
     private readonly Dictionary<string, int> controlIndexer = [];
 
     /// <summary>
-    /// Finalizes and returns the currently read data as a <see cref="BitmaskBeamSearchSolverContext"/>.
+    /// Finalizes and returns the currently read data as an <see cref="EventDataSet"/>.
     /// </summary>
-    /// <returns>An instance of <see cref="BitmaskBeamSearchSolverContext"/></returns>
-    public BitmaskBeamSearchSolverContext GetBitmaskBeamSearchSolverContext()
-        => BitmaskBeamSearchSolverContext.Create(currentIndex, courseBuilderAccumulator);
+    /// <returns>An instance of <see cref="EventDataSet"/></returns>
+    public EventDataSet GetEventDataSet()
+        => EventDataSet.Create(currentIndex, courseBuilderAccumulator);
 
     /// <inheritdoc/>
     public bool CanRead(XmlReader reader)

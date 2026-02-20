@@ -12,13 +12,18 @@ internal readonly record struct BitMask
 
     public readonly ImmutableArray<ulong> Buckets { get; private init; }
 
-    public bool this[int index] => (Buckets[index >> 6] & (1UL << (index & 63))) != 0;
+    public int Length { get; private init; }
+
+    public bool this[int index] => IsSet(Buckets.AsSpan(), index);
 
     public bool IsZero => Buckets.All(x => x == 0);
 
     public int BucketCount => Buckets.Length;
 
     public BitMaskEnumerator GetEnumerator() => new(Buckets);
+
+    public BitMaskBucketEnumerator GetBucketEnumerator(int bucketIndex)
+        => new(bucketIndex, Buckets[bucketIndex]);
 
     public BitMask And(BitMask other)
     {
@@ -40,10 +45,20 @@ internal readonly record struct BitMask
         var result = new ulong[BucketCount];
         for (int i = 0; i < BucketCount; i++)
         {
-            result[i] = Buckets[i] & ~other.Buckets[i];
+            result[i] = Buckets[i] & other.Buckets[i];
         }
 
         return Create(result);
+    }
+
+    public BitMask Set(int index)
+    {
+        var mask = new ulong[BucketCount];
+        Buckets.CopyTo(mask, 0);
+
+        Set(mask, index);
+
+        return Create(mask);
     }
 
     /// <summary>
@@ -86,11 +101,33 @@ internal readonly record struct BitMask
         return true;
     }
 
+    public static void Set(Span<ulong> mask, int index)
+    {
+        ThrowIfOutsideBounds(mask, index);
+
+        mask[index >> 6] |= 1UL << (index & 63);
+    }
+
+    public static bool IsSet(ReadOnlySpan<ulong> mask, int index)
+    {
+        ThrowIfOutsideBounds(mask, index);
+
+        return (mask[index >> 6] & (1UL << (index & 63))) != 0;
+    }
+
     private void ThrowIfDifferentLength(BitMask other, string operationName)
     {
         if (BucketCount != other.BucketCount)
         {
             throw new InvalidOperationException($"Can not perform '{operationName}' on BitMasks of different lengths.");
+        }
+    }
+
+    private static void ThrowIfOutsideBounds(ReadOnlySpan<ulong> mask, int index)
+    {
+        if (index < 0 || index >= (mask.Length << 6))
+        {
+            throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
         }
     }
 
@@ -133,7 +170,7 @@ internal readonly record struct BitMask
 
         public bool MoveNext()
         {
-            while (currentBucket == 0)
+            while (currentBucket == 0UL)
             {
                 if (bucketIndex >= buckets.Length)
                 {
@@ -145,6 +182,26 @@ internal readonly record struct BitMask
 
             currentBit = BitOperations.TrailingZeroCount(currentBucket);
             currentBucket &= ~(1UL << currentBit);
+            return true;
+        }
+    }
+
+    public ref struct BitMaskBucketEnumerator(int bucketIndex, ulong bucket)
+    {
+        private readonly int bucketMask = bucketIndex << 6;
+        private int currentBit = -1;
+
+        public readonly int Current => bucketMask | currentBit;
+
+        public bool MoveNext()
+        {
+            if (bucket == 0UL)
+            {
+                return false;
+            }
+
+            currentBit = BitOperations.TrailingZeroCount(bucket);
+            bucket &= ~(1UL << currentBit);
             return true;
         }
     }

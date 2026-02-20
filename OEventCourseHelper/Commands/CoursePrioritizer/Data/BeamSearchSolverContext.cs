@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal class BitmaskBeamSearchSolverContext(
+internal class BeamSearchSolverContext(
     int totalEventControlCount,
     float totalControlRaritySum,
     int controlMaskBucketCount,
@@ -23,12 +23,12 @@ internal class BitmaskBeamSearchSolverContext(
     public int CourseIdMaskBucketCount { get; private init; } = courseIdMaskBucketCount;
 
     /// <summary>
-    /// Builds a new <see cref="BitmaskBeamSearchSolverContext"/> from <paramref name="courseMasksBuilders"/>.
+    /// Builds a new <see cref="BeamSearchSolverContext"/> from <paramref name="courseMasksBuilders"/>.
     /// </summary>
     /// <param name="totalEventControlCount">The total number of controls in the event.</param>
     /// <param name="courseMasksBuilders">The course mask builders to create the context from.</param>
-    /// <returns>A new instance of <see cref="BitmaskBeamSearchSolverContext"/>.</returns>
-    public static BitmaskBeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseMasksBuilders)
+    /// <returns>A new instance of <see cref="BeamSearchSolverContext"/>.</returns>
+    public static BeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseMasksBuilders)
     {
         var courseCount = courseMasksBuilders.Count();
         var controlMaskBucketCount = ((totalEventControlCount - 1) >> 6) + 1;
@@ -45,7 +45,7 @@ internal class BitmaskBeamSearchSolverContext(
                         courseIdInvertedIndexCache[controlIndex] = new ulong[courseIdMaskBucketCount];
                     }
 
-                    courseIdInvertedIndexCache[controlIndex][courseMask.CourseId.BucketIndex] |= courseMask.CourseId.BucketMask;
+                    BitMask.Set(courseIdInvertedIndexCache[controlIndex], courseMask.CourseIndex);
                 }
                 return courseMask;
             })

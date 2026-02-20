@@ -1,12 +1,11 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
 /// <summary>
 /// Contains a possible solution on which courses are required for the test run.
 /// </summary>
-internal record BitmaskCandidateSolution(
+internal record CandidateSolution(
     ImmutableList<CourseMask> CourseOrder,
     BitMask IncludedCoursesMask,
     BitMask UnvisitedControlsMask,
@@ -23,12 +22,12 @@ internal record BitmaskCandidateSolution(
     public int CourseCount => CourseOrder.Count;
 
     /// <summary>
-    /// Creates a new instance of <see cref="BitmaskCandidateSolution"/> with the bits for all controls in the entire
+    /// Creates a new instance of <see cref="CandidateSolution"/> with the bits for all controls in the entire
     /// orienteering event set to one and with the total rarity score of all theese controls summarized togheter.
     /// </summary>
     /// <param name="context">The context of the current search.</param>
-    /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/>.</returns>
-    public static BitmaskCandidateSolution Initial(BitmaskBeamSearchSolverContext context)
+    /// <returns>A new instance of <see cref="CandidateSolution"/>.</returns>
+    public static CandidateSolution Initial(BeamSearchSolverContext context)
     {
         var unvisitedControlMask = BitMask.Fill(context.TotalEventControlCount);
         var includedCoursesMask = BitMask.Create(new ulong[context.CourseIdMaskBucketCount]);
@@ -36,34 +35,33 @@ internal record BitmaskCandidateSolution(
     }
 
     /// <summary>
-    /// Computes a new instance of <see cref="BitmaskCandidateSolution"/> based on <paramref name="course"/> leaving
-    /// the source <see cref="BitmaskCandidateSolution"/> unmodified.
+    /// Computes a new instance of <see cref="CandidateSolution"/> based on <paramref name="course"/> leaving
+    /// the source <see cref="CandidateSolution"/> unmodified.
     /// </summary>
     /// <param name="course">The <see cref="CourseMask"/> to add to the solution.</param>
     /// <param name="context">The context of the current search.</param>
-    /// <returns>A new instance of <see cref="BitmaskCandidateSolution"/> containing the modified state.</returns>
-    public BitmaskCandidateSolution AddCourse(CourseMask course, BitmaskBeamSearchSolverContext context)
+    /// <returns>A new instance of <see cref="CandidateSolution"/> containing the modified state.</returns>
+    public CandidateSolution AddCourse(CourseMask course, BeamSearchSolverContext context)
     {
-        var newUnvisitedControlsMask = UnvisitedControlsMask.AndNot(course.ControlMask);
-        var rarityGain = GetPotentialRarityGain(course, context.ControlRarityLookup);
+        var newUnvisitedControlsMask = new ulong[context.ControlMaskBucketCount];
+        var rarityGain = 0.0F;
 
-        var newIncludedCoursesMask = new ulong[context.CourseIdMaskBucketCount];
-        for (int i = 0; i < context.CourseIdMaskBucketCount; i++)
+        for (int i = 0; i < context.ControlMaskBucketCount; i++)
         {
-            if (i == course.CourseId.BucketIndex)
+            var overlap = UnvisitedControlsMask.Buckets[i] & course.ControlMask.Buckets[i];
+            var bucketEnumerator = new BitMask.BitMaskBucketEnumerator(i, overlap);
+            while (bucketEnumerator.MoveNext())
             {
-                newIncludedCoursesMask[i] = IncludedCoursesMask[i] | course.CourseId.BucketMask;
+                rarityGain += context.ControlRarityLookup[bucketEnumerator.Current];
             }
-            else
-            {
-                newIncludedCoursesMask[i] = IncludedCoursesMask[i];
-            }
+
+            newUnvisitedControlsMask[i] = UnvisitedControlsMask.Buckets[i] & ~course.ControlMask.Buckets[i];
         }
 
-        return new BitmaskCandidateSolution(
+        return new CandidateSolution(
             CourseOrder.Add(course),
-            ImmutableCollectionsMarshal.AsImmutableArray(newIncludedCoursesMask),
-            newUnvisitedControlsMask,
+            IncludedCoursesMask.Set(course.CourseIndex),
+            BitMask.Create(newUnvisitedControlsMask),
             RarityScore - rarityGain);
     }
 
@@ -88,11 +86,11 @@ internal record BitmaskCandidateSolution(
     }
 
     /// <summary>
-    /// A comparere for <see cref="BitmaskCandidateSolution"/> that prioritizes control rarity over control count.
+    /// A comparere for <see cref="CandidateSolution"/> that prioritizes control rarity over control count.
     /// </summary>
-    internal class RarityComparer() : IComparer<BitmaskCandidateSolution>
+    internal class RarityComparer() : IComparer<CandidateSolution>
     {
-        public int Compare(BitmaskCandidateSolution? x, BitmaskCandidateSolution? y)
+        public int Compare(CandidateSolution? x, CandidateSolution? y)
         {
             if (x is null)
             {

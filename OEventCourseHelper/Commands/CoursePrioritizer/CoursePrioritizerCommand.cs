@@ -38,7 +38,7 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
             return ExitCode.FailedToLoadFile;
         }
 
-        var solver = new BitmaskBeamSearchSolver(settings.BeamWidth);
+        var solver = new BeamSearchSolver(settings.BeamWidth);
         var solverContext = courseReader.GetBitmaskBeamSearchSolverContext();
         if (!solver.TrySolve(solverContext, out var result))
         {

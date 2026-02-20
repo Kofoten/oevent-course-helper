@@ -4,7 +4,7 @@ using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Tests.CoursePrioritizer;
 
-public class BitmaskCandidateSolutionTests
+public class CandidateSolutionTests
 {
     [Fact]
     public void Initial_ShouldCreateNewBitmaskCandidateSolution()
@@ -15,7 +15,7 @@ public class BitmaskCandidateSolutionTests
             .Select(_ => 0.5F)
             .ToImmutableArray();
 
-        var context = new BitmaskBeamSearchSolverContext(
+        var context = new BeamSearchSolverContext(
             totalEventControlCount,
             controlRarityLookup.Sum(),
             2,
@@ -25,7 +25,7 @@ public class BitmaskCandidateSolutionTests
             []);
 
         // Act
-        var actual = BitmaskCandidateSolution.Initial(context);
+        var actual = CandidateSolution.Initial(context);
 
         // Assert
         actual.CourseOrder.Should().HaveCount(0);
@@ -42,9 +42,9 @@ public class BitmaskCandidateSolutionTests
     {
         // Setup
         ImmutableArray<float> controlRarityLookup = [0.5F, 0.2F, 0.25F, 0.67F, 0.1F];
-        var course = new CourseMask(new CourseMask.CourseMaskId(0), "A", new([19UL]), 3);
-        var context = new BitmaskBeamSearchSolverContext(5, 1.72F, 1, 1, [course], controlRarityLookup, []);
-        var solution = new BitmaskCandidateSolution([], new([0UL]), new([31UL]), 1.72F);
+        var course = new CourseMask(0, "A", new([19UL]), 3);
+        var context = new BeamSearchSolverContext(5, 1.72F, 1, 1, [course], controlRarityLookup, []);
+        var solution = new CandidateSolution([], new([0UL]), new([31UL]), 1.72F);
 
         // Act
         var actual = solution.AddCourse(course, context);
@@ -68,9 +68,9 @@ public class BitmaskCandidateSolutionTests
             .Select(_ => 0.5F)
             .ToImmutableArray();
 
-        var course = new CourseMask(new CourseMask.CourseMaskId(0), "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
-        var context = new BitmaskBeamSearchSolverContext(totalEventControlCount, 48.0F, 2, 1, [course], controlRarityLookup, []);
-        var solution = new BitmaskCandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 48.0F);
+        var course = new CourseMask(0, "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
+        var context = new BeamSearchSolverContext(totalEventControlCount, 48.0F, 2, 1, [course], controlRarityLookup, []);
+        var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 48.0F);
 
         // Act
         var actualRarityGain = solution.GetPotentialRarityGain(course, controlRarityLookup);
