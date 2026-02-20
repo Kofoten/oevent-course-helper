@@ -11,17 +11,17 @@ internal class BeamSearchSolver(int BeamWidth)
     private static readonly CandidateSolution.RarityComparer candidateSolutionComparer = new();
 
     /// <summary>
-    /// Uses a beam search to priotitize the courses in <paramref name="context"/> and marking the courses that are required
-    /// in order to visit all controls in the orienteering event.
+    /// Uses a beam search to priotitize the courses in <paramref name="dataSet"/> and marking the courses
+    /// that are required in order to visit all controls in the orienteering event.
     /// </summary>
-    /// <param name="context">The context of the current search.</param>
+    /// <param name="dataSet">The data set to try and compute a solution for.</param>
     /// <param name="solution">The computed solution.</param>
     /// <returns>True if a solution could be found; otherwise False</returns>
-    public bool TrySolve(BeamSearchSolverContext context, [NotNullWhen(true)] out CourseResult[]? solution)
+    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out CourseResult[]? solution)
     {
         // Compute dominated courses
-        var dominatedCourses = new List<CourseMask>();
-        var availableCourses = new List<CourseMask>();
+        var dominatedCourses = new List<Course>();
+        var availableCourses = new List<Course>();
         var dominatedCourseIdMaskCache = new ulong[context.CourseIdMaskBucketCount];
         foreach (var course in context.CourseMasks)
         {
@@ -145,12 +145,12 @@ internal class BeamSearchSolver(int BeamWidth)
     }
 
     /// <summary>
-    /// Calculates if the provided <paramref name="course"/> is dominated by any other <see cref="CourseMask"/> in <paramref name="allCourses"/>.
+    /// Calculates if the provided <paramref name="course"/> is dominated by any other <see cref="Course"/> in <paramref name="allCourses"/>.
     /// </summary>
-    /// <param name="course">The <see cref="CourseMask"> to check.</param>
+    /// <param name="course">The <see cref="Course"> to check.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
-    private static bool IsDominated(CourseMask course, BeamSearchSolverContext context)
+    private static bool IsDominated(Course course, BeamSearchSolverContext context)
     {
         var rarestValue = -1.0F;
         var indexOfRarest = -1;

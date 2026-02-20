@@ -3,10 +3,10 @@
 /// <summary>
 /// Contains the bitmask for the course, the name of the course and the number of controls in the course.
 /// </summary>
-internal record CourseMask(int CourseIndex, string CourseName, BitMask ControlMask, int ControlCount)
+internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, int ControlCount)
 {
     /// <summary>
-    /// Builder for <see cref="CourseMask"/>.
+    /// Builder for <see cref="Course"/>.
     /// </summary>
     internal class Builder()
     {
@@ -15,11 +15,11 @@ internal record CourseMask(int CourseIndex, string CourseName, BitMask ControlMa
         public int ControlCount { get; set; } = 0;
 
         /// <summary>
-        /// Builds the <see cref="CourseMask"/> record.
+        /// Builds the <see cref="Course"/> record.
         /// </summary>
         /// <param name="bucketCount">Total count of 64 bit buckets.</param>
-        /// <returns>An instance of <see cref="CourseMask"/>.</returns>
-        public CourseMask ToCourseMask(int bucketCount, int courseIndex)
+        /// <returns>An instance of <see cref="Course"/>.</returns>
+        public Course ToCourseMask(int bucketCount, int courseIndex)
         {
             var mask = new ulong[bucketCount];
             for (int i = 0; i < ControlMask.Count; i++)
@@ -27,7 +27,7 @@ internal record CourseMask(int CourseIndex, string CourseName, BitMask ControlMa
                 mask[i] = ControlMask[i];
             }
 
-            return new CourseMask(
+            return new Course(
                 courseIndex,
                 CourseName,
                 BitMask.Create(mask),
@@ -40,6 +40,6 @@ internal record CourseMask(int CourseIndex, string CourseName, BitMask ControlMa
     /// </summary>
     internal interface IProcessor
     {
-        void Process(int controlIndex, CourseMask courseMask);
+        void Process(int controlIndex, Course courseMask);
     }
 }

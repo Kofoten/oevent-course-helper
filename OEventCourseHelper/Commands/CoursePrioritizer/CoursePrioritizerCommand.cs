@@ -29,18 +29,18 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
-        var filter = new CourseMaskBuilderFilter(true, [.. settings.Filters]);
-        var courseReader = new CourseMaskNodeReader(filter);
+        var filter = new CourseBuilderFilter(true, [.. settings.Filters]);
+        var dataSetReader = new EventDataSetNodeReader(filter);
         var iofReader = IOFXmlReader.Create();
-        if (!iofReader.TryStream(settings.IofXmlFilePath, courseReader, out var errors))
+        if (!iofReader.TryStream(settings.IofXmlFilePath, dataSetReader, out var errors))
         {
             logger.FailedToLoadFile(settings.IofXmlFilePath, errors.FormatErrors());
             return ExitCode.FailedToLoadFile;
         }
 
         var solver = new BeamSearchSolver(settings.BeamWidth);
-        var solverContext = courseReader.GetBitmaskBeamSearchSolverContext();
-        if (!solver.TrySolve(solverContext, out var result))
+        var dataSet = dataSetReader.GetEventDataSet();
+        if (!solver.TrySolve(dataSet, out var result))
         {
             logger.NoSolutionFound();
             return ExitCode.NoSolutionFound;
