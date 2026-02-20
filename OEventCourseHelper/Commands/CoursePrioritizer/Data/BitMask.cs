@@ -22,9 +22,6 @@ internal readonly record struct BitMask
 
     public BitMaskEnumerator GetEnumerator() => new(Buckets);
 
-    public BitMaskBucketEnumerator GetBucketEnumerator(int bucketIndex)
-        => new(bucketIndex, Buckets[bucketIndex]);
-
     public BitMask And(BitMask other)
     {
         ThrowIfDifferentLength(other, nameof(And));
@@ -186,7 +183,7 @@ internal readonly record struct BitMask
         }
     }
 
-    public ref struct BitMaskBucketEnumerator(int bucketIndex, ulong bucket)
+    public ref struct BucketEnumerator(int bucketIndex, ulong bucket)
     {
         private readonly int bucketMask = bucketIndex << 6;
         private int currentBit = -1;

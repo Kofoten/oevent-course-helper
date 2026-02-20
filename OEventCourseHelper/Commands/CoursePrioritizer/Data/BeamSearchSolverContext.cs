@@ -1,104 +1,13 @@
 ﻿using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal class BeamSearchSolverContext(
-    int totalEventControlCount,
-    float totalControlRaritySum,
-    int controlMaskBucketCount,
-    int courseIdMaskBucketCount,
-    ImmutableArray<Course> courseMasks,
-    ImmutableArray<float> controlRarityLookup,
-    ImmutableArray<ImmutableArray<ulong>> courseIdInvertedIndex)
-{
-    public const float MaximumRarity = 1.0F;
-
-    public ImmutableArray<Course> CourseMasks { get; private init; } = courseMasks;
-    public ImmutableArray<float> ControlRarityLookup { get; private init; } = controlRarityLookup;
-    public ImmutableArray<ImmutableArray<ulong>> CourseInvertedIndex { get; private set; } = courseIdInvertedIndex;
-    public int TotalEventControlCount { get; private init; } = totalEventControlCount;
-    public float TotalControlRaritySum { get; private init; } = totalControlRaritySum;
-    public int ControlMaskBucketCount { get; private init; } = controlMaskBucketCount;
-    public int CourseIdMaskBucketCount { get; private init; } = courseIdMaskBucketCount;
-
-    /// <summary>
-    /// Builds a new <see cref="BeamSearchSolverContext"/> from <paramref name="courseMasksBuilders"/>.
-    /// </summary>
-    /// <param name="totalEventControlCount">The total number of controls in the event.</param>
-    /// <param name="courseMasksBuilders">The course mask builders to create the context from.</param>
-    /// <returns>A new instance of <see cref="BeamSearchSolverContext"/>.</returns>
-    public static BeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<Course.Builder> courseMasksBuilders)
-    {
-        var courseCount = courseMasksBuilders.Count();
-        var controlMaskBucketCount = ((totalEventControlCount - 1) >> 6) + 1;
-        var courseIdMaskBucketCount = ((courseCount - 1) >> 6) + 1;
-        var courseIdInvertedIndexCache = new ulong[totalEventControlCount][];
-        var courseMasks = courseMasksBuilders
-            .Select((x, i) =>
-            {
-                var courseMask = x.ToCourseMask(controlMaskBucketCount, i);
-                foreach (var controlIndex in courseMask.ControlMask)
-                {
-                    if (courseIdInvertedIndexCache[controlIndex] is null || courseIdInvertedIndexCache.Length == 0)
-                    {
-                        courseIdInvertedIndexCache[controlIndex] = new ulong[courseIdMaskBucketCount];
-                    }
-
-                    BitMask.Set(courseIdInvertedIndexCache[controlIndex], courseMask.CourseIndex);
-                }
-                return courseMask;
-            })
-            .ToImmutableArray();
-
-        var controlRarityLookup = BuildControlRarityLookup(totalEventControlCount, courseMasks);
-        var totalControlRaritySum = controlRarityLookup.Sum();
-        var courseIdInvertedIndex = new ImmutableArray<ulong>[totalEventControlCount];
-
-        for (int i = 0; i < totalEventControlCount; i++)
-        {
-            courseIdInvertedIndex[i] = ImmutableCollectionsMarshal.AsImmutableArray(courseIdInvertedIndexCache[i]);
-        }
-
-        return new(
-            totalEventControlCount,
-            totalControlRaritySum,
-            controlMaskBucketCount,
-            courseIdMaskBucketCount,
-            courseMasks,
-            controlRarityLookup,
-            ImmutableCollectionsMarshal.AsImmutableArray(courseIdInvertedIndex));
-    }
-
-    /// <summary>
-    /// Builds an <see cref="ImmutableArray{float}"/> containing each controls rarity score mapped to it's global index value.
-    /// </summary>
-    /// <param name="courseMasks">The set containing all courses.</param>
-    /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
-    private static ImmutableArray<float> BuildControlRarityLookup(int totalEventControlCount, IEnumerable<Course> courseMasks)
-    {
-        var controlFrequencies = new int[totalEventControlCount];
-        foreach (var course in courseMasks)
-        {
-            foreach (var controlIndex in course.ControlMask)
-            {
-                controlFrequencies[controlIndex]++;
-            }
-        }
-
-        var rarityLookup = new float[totalEventControlCount];
-        for (int i = 0; i < totalEventControlCount; i++)
-        {
-            if (controlFrequencies[i] == 0)
-            {
-                rarityLookup[i] = 0.0F;
-            }
-            else
-            {
-                rarityLookup[i] = MaximumRarity / controlFrequencies[i];
-            }
-        }
-
-        return ImmutableCollectionsMarshal.AsImmutableArray(rarityLookup);
-    }
-}
+internal record BeamSearchSolverContext(
+    int TotalEventControlCount,
+    float TotalControlRaritySum,
+    int ControlMaskBucketCount,
+    int CourseMaskBucketCount,
+    ImmutableArray<Course> Courses,
+    ImmutableArray<float> ControlRarityLookup,
+    BitMask DominatedCoursesMask,
+    ImmutableArray<ImmutableArray<ulong>> CourseInvertedIndex);

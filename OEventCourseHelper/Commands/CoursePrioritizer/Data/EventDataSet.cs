@@ -2,7 +2,7 @@
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal class EventDataSet(int TotalEventControlCount, ImmutableArray<Course> Courses)
+internal record EventDataSet(int TotalEventControlCount, ImmutableArray<Course> Courses)
 {
     public static EventDataSet Create(int totalEventControlCount, IEnumerable<Course.Builder> courseBuilders)
     {

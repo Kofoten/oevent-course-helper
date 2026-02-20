@@ -5,7 +5,7 @@ namespace OEventCourseHelper.Tests.CoursePrioritizer;
 
 public class CandidateSolutionRarityComparerTests
 {
-    private CandidateSolution.RarityComparer comparer = new();
+    private readonly CandidateSolution.RarityComparer comparer = new();
 
     [Fact]
     public void Compare_ShouldReturnZero_WhenBothAreNull()

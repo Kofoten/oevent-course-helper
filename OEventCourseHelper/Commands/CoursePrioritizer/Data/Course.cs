@@ -34,12 +34,4 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
                 ControlCount);
         }
     }
-
-    /// <summary>
-    /// Interface for use with <see cref="ForEachControl"/>.
-    /// </summary>
-    internal interface IProcessor
-    {
-        void Process(int controlIndex, Course courseMask);
-    }
 }

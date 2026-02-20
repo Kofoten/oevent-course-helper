@@ -22,6 +22,7 @@ public class CandidateSolutionTests
             1,
             [],
             controlRarityLookup,
+            new([]),
             []);
 
         // Act
@@ -43,7 +44,7 @@ public class CandidateSolutionTests
         // Setup
         ImmutableArray<float> controlRarityLookup = [0.5F, 0.2F, 0.25F, 0.67F, 0.1F];
         var course = new Course(0, "A", new([19UL]), 3);
-        var context = new BeamSearchSolverContext(5, 1.72F, 1, 1, [course], controlRarityLookup, []);
+        var context = new BeamSearchSolverContext(5, 1.72F, 1, 1, [course], controlRarityLookup, new([]), []);
         var solution = new CandidateSolution([], new([0UL]), new([31UL]), 1.72F);
 
         // Act
@@ -69,7 +70,7 @@ public class CandidateSolutionTests
             .ToImmutableArray();
 
         var course = new Course(0, "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
-        var context = new BeamSearchSolverContext(totalEventControlCount, 48.0F, 2, 1, [course], controlRarityLookup, []);
+        var context = new BeamSearchSolverContext(totalEventControlCount, 48.0F, 2, 1, [course], controlRarityLookup, new([]), []);
         var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 48.0F);
 
         // Act

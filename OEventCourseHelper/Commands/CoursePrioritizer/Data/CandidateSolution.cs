@@ -30,7 +30,7 @@ internal record CandidateSolution(
     public static CandidateSolution Initial(BeamSearchSolverContext context)
     {
         var unvisitedControlMask = BitMask.Fill(context.TotalEventControlCount);
-        var includedCoursesMask = BitMask.Create(new ulong[context.CourseIdMaskBucketCount]);
+        var includedCoursesMask = BitMask.Create(new ulong[context.CourseMaskBucketCount]);
         return new([], includedCoursesMask, unvisitedControlMask, context.TotalControlRaritySum);
     }
 
@@ -49,7 +49,7 @@ internal record CandidateSolution(
         for (int i = 0; i < context.ControlMaskBucketCount; i++)
         {
             var overlap = UnvisitedControlsMask.Buckets[i] & course.ControlMask.Buckets[i];
-            var bucketEnumerator = new BitMask.BitMaskBucketEnumerator(i, overlap);
+            var bucketEnumerator = new BitMask.BucketEnumerator(i, overlap);
             while (bucketEnumerator.MoveNext())
             {
                 rarityGain += context.ControlRarityLookup[bucketEnumerator.Current];
