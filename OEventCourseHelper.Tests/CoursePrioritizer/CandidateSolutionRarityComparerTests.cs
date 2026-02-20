@@ -55,9 +55,9 @@ public class CandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenRarityScoreIsEqualAndXHasFewerCourses()
     {
         // Setup
-        var courseA = new CourseMask(0, "A", new([]), 0);
-        var courseB = new CourseMask(1, "B", new([]), 0);
-        var courseC = new CourseMask(2, "C", new([]), 0);
+        var courseA = new Course(0, "A", new([]), 0);
+        var courseB = new Course(1, "B", new([]), 0);
+        var courseC = new Course(2, "C", new([]), 0);
 
         var x = new CandidateSolution([courseA], new([]), new([]), 0.5F);
         var y = new CandidateSolution([courseB, courseC], new([]), new([]), 0.5F);

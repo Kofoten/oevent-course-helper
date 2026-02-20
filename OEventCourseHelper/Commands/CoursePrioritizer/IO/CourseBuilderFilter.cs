@@ -3,14 +3,14 @@ using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 
-internal class CourseMaskBuilderFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
+internal class CourseBuilderFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
 {
     /// <summary>
     /// Checks if <paramref name="builder"/> matches the filter.
     /// </summary>
-    /// <param name="builder">The <see cref="CourseMask.Builder"/> to check.</param>
-    /// <returns>True if the <see cref="CourseMask.Builder"/> matches the filter; otherwise False.</returns>
-    public bool Matches(CourseMask.Builder builder)
+    /// <param name="builder">The <see cref="Course.Builder"/> to check.</param>
+    /// <returns>True if the <see cref="Course.Builder"/> matches the filter; otherwise False.</returns>
+    public bool Matches(Course.Builder builder)
     {
         if (FilterEmpty && builder.ControlMask.All(x => x == 0))
         {

@@ -6,7 +6,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 /// Contains a possible solution on which courses are required for the test run.
 /// </summary>
 internal record CandidateSolution(
-    ImmutableList<CourseMask> CourseOrder,
+    ImmutableList<Course> CourseOrder,
     BitMask IncludedCoursesMask,
     BitMask UnvisitedControlsMask,
     float RarityScore)
@@ -38,10 +38,10 @@ internal record CandidateSolution(
     /// Computes a new instance of <see cref="CandidateSolution"/> based on <paramref name="course"/> leaving
     /// the source <see cref="CandidateSolution"/> unmodified.
     /// </summary>
-    /// <param name="course">The <see cref="CourseMask"/> to add to the solution.</param>
+    /// <param name="course">The <see cref="Course"/> to add to the solution.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>A new instance of <see cref="CandidateSolution"/> containing the modified state.</returns>
-    public CandidateSolution AddCourse(CourseMask course, BeamSearchSolverContext context)
+    public CandidateSolution AddCourse(Course course, BeamSearchSolverContext context)
     {
         var newUnvisitedControlsMask = new ulong[context.ControlMaskBucketCount];
         var rarityGain = 0.0F;
@@ -68,10 +68,10 @@ internal record CandidateSolution(
     /// <summary>
     /// Calculates the rarity that would be gained by adding <paramref name="course"/> to this solution.
     /// </summary>
-    /// <param name="course">The <see cref="CourseMask"/> to calculate rarity gain for.</param>
+    /// <param name="course">The <see cref="Course"/> to calculate rarity gain for.</param>
     /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
-    /// <returns>The calculated gain to this solution by including the provided <see cref="CourseMask"/>.</returns>
-    public float GetPotentialRarityGain(CourseMask course, ImmutableArray<float> controlRarityLookup)
+    /// <returns>The calculated gain to this solution by including the provided <see cref="Course"/>.</returns>
+    public float GetPotentialRarityGain(Course course, ImmutableArray<float> controlRarityLookup)
     {
         var rarityGain = 0.0F;
         foreach (var controlIndex in course.ControlMask)

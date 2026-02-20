@@ -8,13 +8,13 @@ internal class BeamSearchSolverContext(
     float totalControlRaritySum,
     int controlMaskBucketCount,
     int courseIdMaskBucketCount,
-    ImmutableArray<CourseMask> courseMasks,
+    ImmutableArray<Course> courseMasks,
     ImmutableArray<float> controlRarityLookup,
     ImmutableArray<ImmutableArray<ulong>> courseIdInvertedIndex)
 {
     public const float MaximumRarity = 1.0F;
 
-    public ImmutableArray<CourseMask> CourseMasks { get; private init; } = courseMasks;
+    public ImmutableArray<Course> CourseMasks { get; private init; } = courseMasks;
     public ImmutableArray<float> ControlRarityLookup { get; private init; } = controlRarityLookup;
     public ImmutableArray<ImmutableArray<ulong>> CourseInvertedIndex { get; private set; } = courseIdInvertedIndex;
     public int TotalEventControlCount { get; private init; } = totalEventControlCount;
@@ -28,7 +28,7 @@ internal class BeamSearchSolverContext(
     /// <param name="totalEventControlCount">The total number of controls in the event.</param>
     /// <param name="courseMasksBuilders">The course mask builders to create the context from.</param>
     /// <returns>A new instance of <see cref="BeamSearchSolverContext"/>.</returns>
-    public static BeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseMasksBuilders)
+    public static BeamSearchSolverContext Create(int totalEventControlCount, IEnumerable<Course.Builder> courseMasksBuilders)
     {
         var courseCount = courseMasksBuilders.Count();
         var controlMaskBucketCount = ((totalEventControlCount - 1) >> 6) + 1;
@@ -75,7 +75,7 @@ internal class BeamSearchSolverContext(
     /// </summary>
     /// <param name="courseMasks">The set containing all courses.</param>
     /// <returns>A new instance of <see cref="ImmutableArray{float}"/>.</returns>
-    private static ImmutableArray<float> BuildControlRarityLookup(int totalEventControlCount, IEnumerable<CourseMask> courseMasks)
+    private static ImmutableArray<float> BuildControlRarityLookup(int totalEventControlCount, IEnumerable<Course> courseMasks)
     {
         var controlFrequencies = new int[totalEventControlCount];
         foreach (var course in courseMasks)

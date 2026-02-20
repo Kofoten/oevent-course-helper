@@ -7,7 +7,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 /// <summary>
 /// Reads the courses from a IOF 3.0 Xml file and counts the total number of used controls.
 /// </summary>
-internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeReader
+internal class EventDataSetNodeReader(CourseBuilderFilter Filter) : IXmlNodeReader
 {
     private const string CourseElementName = "Course";
     private const string CourseNameElementName = "Name";
@@ -17,7 +17,7 @@ internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeRe
     private const string ValidControlTypeAttributeValue = "Control";
 
     private int currentIndex = 0;
-    private readonly List<CourseMask.Builder> courseBuilderAccumulator = [];
+    private readonly List<Course.Builder> courseBuilderAccumulator = [];
     private readonly Dictionary<string, int> controlIndexer = [];
 
     /// <summary>
@@ -39,7 +39,7 @@ internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeRe
         using var subReader = reader.ReadSubtree();
         subReader.Read();
 
-        var builder = new CourseMask.Builder();
+        var builder = new Course.Builder();
         while (subReader.Read())
         {
             if (subReader.NodeType == XmlNodeType.Element)
@@ -122,7 +122,7 @@ internal class CourseMaskNodeReader(CourseMaskBuilderFilter Filter) : IXmlNodeRe
 
     internal record CourseMaskNodeReaderResult
     {
-        public required IEnumerable<CourseMask> CourseMasks { get; init; }
+        public required IEnumerable<Course> CourseMasks { get; init; }
         public required int TotalEventControlCount { get; init; }
     }
 }

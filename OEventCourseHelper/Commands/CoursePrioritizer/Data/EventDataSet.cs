@@ -2,9 +2,9 @@
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal class EventDataSet(int TotalEventControlCount, ImmutableArray<CourseMask> Courses)
+internal class EventDataSet(int TotalEventControlCount, ImmutableArray<Course> Courses)
 {
-    public static EventDataSet Create(int totalEventControlCount, IEnumerable<CourseMask.Builder> courseBuilders)
+    public static EventDataSet Create(int totalEventControlCount, IEnumerable<Course.Builder> courseBuilders)
     {
         var bucketCount = BitMask.GetBucketCount(totalEventControlCount);
         var courses = courseBuilders

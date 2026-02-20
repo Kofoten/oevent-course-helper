@@ -11,7 +11,7 @@ public class BeamSearchSolverTests
     public void TrySolve_ShouldOrderCoursesCorrectly()
     {
         // Setup
-        var courseMasks = new CourseMask[]
+        var courseMasks = new Course[]
         {
             new(0, "Dominated", new([5UL]), 2), // Mask 101000
             new(1, "Longest", new([21Ul]), 3),  // Mask 101010
@@ -54,7 +54,7 @@ public class BeamSearchSolverTests
     public void TrySolve_ShouldSortByAlphabeticalWhenIdentical()
     {
         // Setup
-        var courseMasks = new CourseMask[]
+        var courseMasks = new Course[]
         {
             new(0, "A", new([3UL]), 2),
             new(1, "B", new([3Ul]), 2),

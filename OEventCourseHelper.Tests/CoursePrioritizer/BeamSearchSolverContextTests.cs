@@ -10,7 +10,7 @@ public class BeamSearchSolverContextTests
     {
         // Setup
         var totalControlCount = 6;
-        var builders = new CourseMask.Builder[]
+        var builders = new Course.Builder[]
         {
             new()
             {
@@ -51,10 +51,10 @@ public class BeamSearchSolverContextTests
             o => o.WithStrictOrdering());
         actual.CourseMasks.Should().HaveCount(4);
         actual.CourseMasks.Should().BeEquivalentTo([
-            new CourseMask(0, "Course 1", new([5UL]), 2),
-            new CourseMask(1, "Course 2", new([21Ul]), 3),
-            new CourseMask(2, "Course 3", new([18Ul]), 2),
-            new CourseMask(3, "Course 4", new([40UL]), 2),
+            new Course(0, "Course 1", new([5UL]), 2),
+            new Course(1, "Course 2", new([21Ul]), 3),
+            new Course(2, "Course 3", new([18Ul]), 2),
+            new Course(3, "Course 4", new([40UL]), 2),
         ], o => o.WithoutStrictOrdering());
     }
 }
