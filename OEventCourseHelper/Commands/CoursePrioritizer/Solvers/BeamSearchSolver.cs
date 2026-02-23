@@ -19,7 +19,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <param name="dataSet">The data set to try and compute a solution for.</param>
     /// <param name="solution">The computed solution.</param>
     /// <returns>True if a solution could be found; otherwise False</returns>
-    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out CourseResult[]? solution)
+    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out PriorityResult[]? solution)
     {
         var context = BuildContext(dataSet);
         var requiredCoursesResult = FindAndOrderRequiredCourses(context);
@@ -31,13 +31,13 @@ internal class BeamSearchSolver(int BeamWidth)
 
         solution = [
             .. requiredCoursesResult.Order
-                .Select(x => new CourseResult(x.CourseName, true)),
+                .Select(x => new PriorityResult(x.CourseName, true)),
             .. context.Courses
                 .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
                 .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
                 .ThenByDescending(x => x.ControlCount)
                 .ThenBy(x => x.CourseName)
-                .Select(x => new CourseResult(x.CourseName, false)),
+                .Select(x => new PriorityResult(x.CourseName, false)),
         ];
 
         return true;
@@ -66,17 +66,17 @@ internal class BeamSearchSolver(int BeamWidth)
                     continue;
                 }
 
-                var validCoursesMask = new ulong[context.CourseMaskBucketCount];
+                var validCoursesMaskBuilder = new BitMask.Builder(context.CourseMaskBucketCount);
                 foreach (var controlIndex in candidate.UnvisitedControlsMask)
                 {
                     var coursesWithControl = context.CourseInvertedIndex[controlIndex];
                     for (int i = 0; i < context.CourseMaskBucketCount; i++)
                     {
-                        validCoursesMask[i] |= coursesWithControl[i];
+                        validCoursesMaskBuilder.OrBucketAt(i, coursesWithControl);
                     }
                 }
 
-                foreach (var courseIndex in BitMask.Create(validCoursesMask))
+                foreach (var courseIndex in validCoursesMaskBuilder.ToBitMask())
                 {
                     var course = context.Courses[courseIndex];
 
@@ -131,27 +131,25 @@ internal class BeamSearchSolver(int BeamWidth)
     {
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
         var controlFrequencies = new int[dataSet.TotalEventControlCount];
-        var courseInvertedIndex = new ulong[dataSet.TotalEventControlCount][];
+        var courseInvertedIndex = new BitMask.Builder[dataSet.TotalEventControlCount];
         foreach (var course in dataSet.Courses)
         {
             foreach (var controlIndex in course.ControlMask)
             {
                 controlFrequencies[controlIndex]++;
 
-                if (courseInvertedIndex[controlIndex] is null
-                    ||
-                    courseInvertedIndex[controlIndex].Length == 0)
+                if (courseInvertedIndex[controlIndex] is null)
                 {
-                    courseInvertedIndex[controlIndex] = new ulong[courseMaskBucketCount];
+                    courseInvertedIndex[controlIndex] = new BitMask.Builder(courseMaskBucketCount);
                 }
 
-                BitMask.Set(courseInvertedIndex[controlIndex], course.CourseIndex);
+                courseInvertedIndex[controlIndex].Set(course.CourseIndex);
             }
         }
 
         var totalControlRaritySum = 0.0F;
         var controlRarityLookup = new float[dataSet.TotalEventControlCount];
-        var immutableCourseInvertedIndicies = new ImmutableArray<ulong>[dataSet.TotalEventControlCount];
+        var immutableCourseInvertedIndicies = new BitMask[dataSet.TotalEventControlCount];
         for (int i = 0; i < dataSet.TotalEventControlCount; i++)
         {
             if (controlFrequencies[i] == 0)
@@ -164,15 +162,15 @@ internal class BeamSearchSolver(int BeamWidth)
                 totalControlRaritySum += controlRarityLookup[i];
             }
 
-            immutableCourseInvertedIndicies[i] = ImmutableCollectionsMarshal.AsImmutableArray(courseInvertedIndex[i]);
+            immutableCourseInvertedIndicies[i] = courseInvertedIndex[i].ToBitMask();
         }
 
-        var dominatedCoursesMask = new ulong[courseMaskBucketCount];
+        var dominatedCoursesMaskBuilder = new BitMask.Builder(courseMaskBucketCount);
         foreach (var course in dataSet.Courses)
         {
             if (IsDominated(course, dataSet.Courses, controlRarityLookup))
             {
-                BitMask.Set(dominatedCoursesMask, course.CourseIndex);
+                dominatedCoursesMaskBuilder.Set(course.CourseIndex);
             }
         }
 
@@ -183,7 +181,7 @@ internal class BeamSearchSolver(int BeamWidth)
             courseMaskBucketCount,
             dataSet.Courses,
             ImmutableCollectionsMarshal.AsImmutableArray(controlRarityLookup),
-            BitMask.Create(dominatedCoursesMask),
+            dominatedCoursesMaskBuilder.ToBitMask(),
             ImmutableCollectionsMarshal.AsImmutableArray(immutableCourseInvertedIndicies));
     }
 
@@ -299,5 +297,5 @@ internal class BeamSearchSolver(int BeamWidth)
         public ImmutableList<T> ToImmutableList() => [.. beam];
     }
 
-    public record CourseResult(string Name, bool IsRequired);
+    public record PriorityResult(string Name, bool IsRequired);
 }

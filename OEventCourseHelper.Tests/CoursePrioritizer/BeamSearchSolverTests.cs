@@ -29,10 +29,10 @@ public class BeamSearchSolverTests
         // Assert
         solutionFound.Should().BeTrue();
         actual!.Length.Should().Be(4);
-        actual[0].Should().Be(new BeamSearchSolver.CourseResult("Rarest", true));
-        actual[1].Should().Be(new BeamSearchSolver.CourseResult("Longest", true));
-        actual[2].Should().Be(new BeamSearchSolver.CourseResult("Control", true));
-        actual[3].Should().Be(new BeamSearchSolver.CourseResult("Dominated", false));
+        actual[0].Should().Be(new BeamSearchSolver.PriorityResult("Rarest", true));
+        actual[1].Should().Be(new BeamSearchSolver.PriorityResult("Longest", true));
+        actual[2].Should().Be(new BeamSearchSolver.PriorityResult("Control", true));
+        actual[3].Should().Be(new BeamSearchSolver.PriorityResult("Dominated", false));
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class BeamSearchSolverTests
         // Assert
         solutionFound.Should().BeTrue();
         actual!.Length.Should().Be(2);
-        actual[0].Should().Be(new BeamSearchSolver.CourseResult("A", true));
-        actual[1].Should().Be(new BeamSearchSolver.CourseResult("B", false));
+        actual[0].Should().Be(new BeamSearchSolver.PriorityResult("A", true));
+        actual[1].Should().Be(new BeamSearchSolver.PriorityResult("B", false));
     }
 }

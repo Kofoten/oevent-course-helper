@@ -1,6 +1,7 @@
 ﻿using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Xml;
 using System.Xml;
+using System.Xml.Serialization;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 
@@ -10,11 +11,13 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 internal class EventDataSetNodeReader(CourseBuilderFilter Filter) : IXmlNodeReader
 {
     private const string CourseElementName = "Course";
-    private const string CourseNameElementName = "Name";
-    private const string CourseControlElementName = "CourseControl";
-    private const string ControlElementName = "Control";
-    private const string ControlTypeAttributeName = "type";
-    private const string ValidControlTypeAttributeValue = "Control";
+    private const string CourseElementSchemaType = "Course";
+
+    private static readonly XmlSerializer courseSerializer = new(typeof(IOF.Xml.Course),
+        new XmlRootAttribute(CourseElementName)
+        {
+            Namespace = "http://www.orienteering.org/datastandard/3.0"
+        });
 
     private int currentIndex = 0;
     private readonly List<Course.Builder> courseBuilderAccumulator = [];
@@ -30,99 +33,51 @@ internal class EventDataSetNodeReader(CourseBuilderFilter Filter) : IXmlNodeRead
     /// <inheritdoc/>
     public bool CanRead(XmlReader reader)
     {
-        return reader.NodeType == XmlNodeType.Element && reader.LocalName == CourseElementName;
+        return reader.NodeType == XmlNodeType.Element
+            && reader.LocalName == CourseElementName
+            && reader.SchemaInfo?.SchemaType?.Name == CourseElementSchemaType;
     }
 
     /// <inheritdoc/>
     public void Read(XmlReader reader)
     {
         using var subReader = reader.ReadSubtree();
-        subReader.Read();
+        var deserializedObject = courseSerializer.Deserialize(subReader);
 
-        var builder = new Course.Builder();
-        while (subReader.Read())
+        if (deserializedObject is IOF.Xml.Course iofCourse)
         {
-            if (subReader.NodeType == XmlNodeType.Element)
+            var builder = new Course.Builder(iofCourse.Name);
+            foreach (var courseControl in iofCourse.CourseControl)
             {
-                if (subReader.LocalName == CourseNameElementName)
-                {
-                    builder.CourseName = subReader.ReadElementContentAsString();
-                }
-                else if (subReader.LocalName == CourseControlElementName)
-                {
-                    string type = subReader.GetAttribute(ControlTypeAttributeName)
-                        ?? ValidControlTypeAttributeValue;
-
-                    if (type == ValidControlTypeAttributeValue)
-                    {
-                        builder.ControlCount += ProcessCourseControl(subReader, builder.ControlMask);
-                    }
-                }
-            }
-        }
-
-        if (Filter.Matches(builder))
-        {
-            courseBuilderAccumulator.Add(builder);
-        }
-    }
-
-    /// <summary>
-    /// Reads a specific CourseControl element.
-    /// </summary>
-    private int ProcessCourseControl(XmlReader reader, IList<ulong> controlMask)
-    {
-        var controlCount = 0;
-        if (reader.IsEmptyElement)
-        {
-            return controlCount;
-        }
-
-        int initialDepth = reader.Depth;
-        while (reader.Read())
-        {
-            if (reader.NodeType == XmlNodeType.EndElement && reader.Depth == initialDepth)
-            {
-                break;
-            }
-
-            if (reader.NodeType == XmlNodeType.Element && reader.LocalName == ControlElementName)
-            {
-                var code = reader.ReadElementContentAsString();
-                if (string.IsNullOrWhiteSpace(code))
+                if (courseControl.type != IOF.Xml.ControlType.Control)
                 {
                     continue;
                 }
 
-                if (!controlIndexer.TryGetValue(code, out var index))
+                if (courseControl.Control is null)
                 {
-                    index = currentIndex++;
-                    controlIndexer[code] = index;
+                    continue;
                 }
 
-                int wordIndex = index >> 6;
-                int bitIndex = index & 63;
-
-                while (controlMask.Count <= wordIndex)
+                foreach (var controlCode in courseControl.Control)
                 {
-                    controlMask.Add(0UL);
-                }
+                    if (!controlIndexer.TryGetValue(controlCode, out var index))
+                    {
+                        index = currentIndex++;
+                        controlIndexer[controlCode] = index;
+                    }
 
-                ulong mask = 1UL << bitIndex;
-                if ((controlMask[wordIndex] & mask) == 0)
-                {
-                    controlMask[wordIndex] |= mask;
-                    controlCount++;
+                    if (builder.ControlMaskBuilder.Set(index))
+                    {
+                        builder.ControlCount++;
+                    }
                 }
             }
+
+            if (Filter.Matches(builder))
+            {
+                courseBuilderAccumulator.Add(builder);
+            }
         }
-
-        return controlCount;
-    }
-
-    internal record CourseMaskNodeReaderResult
-    {
-        public required IEnumerable<Course> CourseMasks { get; init; }
-        public required int TotalEventControlCount { get; init; }
     }
 }

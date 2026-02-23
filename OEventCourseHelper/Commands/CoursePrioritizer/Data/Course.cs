@@ -11,8 +11,14 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
     internal class Builder()
     {
         public string CourseName { get; set; } = "Unknown Course";
-        public IList<ulong> ControlMask { get; set; } = [];
+        public BitMask.Builder ControlMaskBuilder { get; set; } = new();
         public int ControlCount { get; set; } = 0;
+
+        public Builder(string courseName)
+            : this()
+        {
+            this.CourseName = courseName;
+        }
 
         /// <summary>
         /// Builds the <see cref="Course"/> record.
@@ -21,16 +27,10 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
         /// <returns>An instance of <see cref="Course"/>.</returns>
         public Course ToCourseMask(int bucketCount, int courseIndex)
         {
-            var mask = new ulong[bucketCount];
-            for (int i = 0; i < ControlMask.Count; i++)
-            {
-                mask[i] = ControlMask[i];
-            }
-
             return new Course(
                 courseIndex,
                 CourseName,
-                BitMask.Create(mask),
+                ControlMaskBuilder.ToBitMask(bucketCount),
                 ControlCount);
         }
     }

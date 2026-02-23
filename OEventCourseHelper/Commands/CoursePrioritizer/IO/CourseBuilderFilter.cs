@@ -12,7 +12,7 @@ internal class CourseBuilderFilter(bool FilterEmpty, ImmutableArray<string> Name
     /// <returns>True if the <see cref="Course.Builder"/> matches the filter; otherwise False.</returns>
     public bool Matches(Course.Builder builder)
     {
-        if (FilterEmpty && builder.ControlMask.All(x => x == 0))
+        if (FilterEmpty && builder.ControlMaskBuilder.IsZero)
         {
             return false;
         }

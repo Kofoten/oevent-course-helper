@@ -10,4 +10,4 @@ internal record BeamSearchSolverContext(
     ImmutableArray<Course> Courses,
     ImmutableArray<float> ControlRarityLookup,
     BitMask DominatedCoursesMask,
-    ImmutableArray<ImmutableArray<ulong>> CourseInvertedIndex);
+    ImmutableArray<BitMask> CourseInvertedIndex);

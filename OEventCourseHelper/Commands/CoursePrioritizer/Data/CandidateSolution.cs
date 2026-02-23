@@ -30,7 +30,7 @@ internal record CandidateSolution(
     public static CandidateSolution Initial(BeamSearchSolverContext context)
     {
         var unvisitedControlMask = BitMask.Fill(context.TotalEventControlCount);
-        var includedCoursesMask = BitMask.Create(new ulong[context.CourseMaskBucketCount]);
+        var includedCoursesMask = BitMask.Zero(context.CourseMaskBucketCount);
         return new([], includedCoursesMask, unvisitedControlMask, context.TotalControlRaritySum);
     }
 
@@ -43,7 +43,7 @@ internal record CandidateSolution(
     /// <returns>A new instance of <see cref="CandidateSolution"/> containing the modified state.</returns>
     public CandidateSolution AddCourse(Course course, BeamSearchSolverContext context)
     {
-        var newUnvisitedControlsMask = new ulong[context.ControlMaskBucketCount];
+        var unvisitedControlsMaskBuilder = BitMask.Builder.From(UnvisitedControlsMask);
         var rarityGain = 0.0F;
 
         for (int i = 0; i < context.ControlMaskBucketCount; i++)
@@ -55,13 +55,16 @@ internal record CandidateSolution(
                 rarityGain += context.ControlRarityLookup[bucketEnumerator.Current];
             }
 
-            newUnvisitedControlsMask[i] = UnvisitedControlsMask.Buckets[i] & ~course.ControlMask.Buckets[i];
+            unvisitedControlsMaskBuilder.AndNotBucketAt(i, course.ControlMask);
         }
+
+        var includedCoursesMaskBuilder = BitMask.Builder.From(IncludedCoursesMask);
+        includedCoursesMaskBuilder.Set(course.CourseIndex);
 
         return new CandidateSolution(
             CourseOrder.Add(course),
-            IncludedCoursesMask.Set(course.CourseIndex),
-            BitMask.Create(newUnvisitedControlsMask),
+            includedCoursesMaskBuilder.ToBitMask(),
+            unvisitedControlsMaskBuilder.ToBitMask(),
             RarityScore - rarityGain);
     }
 
