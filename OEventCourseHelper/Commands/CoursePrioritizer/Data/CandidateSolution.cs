@@ -41,31 +41,10 @@ internal record CandidateSolution(
     /// <param name="course">The <see cref="Course"/> to add to the solution.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>A new instance of <see cref="CandidateSolution"/> containing the modified state.</returns>
-    public CandidateSolution AddCourse(Course course, BeamSearchSolverContext context)
+    public CandidateBlueprint AddCourse(Course course, BeamSearchSolverContext context)
     {
-        var unvisitedControlsMaskBuilder = BitMask.Builder.From(UnvisitedControlsMask);
-        var rarityGain = 0.0F;
-
-        for (int i = 0; i < context.ControlMaskBucketCount; i++)
-        {
-            var overlap = UnvisitedControlsMask.Buckets[i] & course.ControlMask.Buckets[i];
-            var bucketEnumerator = new BitMask.BucketEnumerator(i, overlap);
-            while (bucketEnumerator.MoveNext())
-            {
-                rarityGain += context.ControlRarityLookup[bucketEnumerator.Current];
-            }
-
-            unvisitedControlsMaskBuilder.AndNotBucketAt(i, course.ControlMask);
-        }
-
-        var includedCoursesMaskBuilder = BitMask.Builder.From(IncludedCoursesMask);
-        includedCoursesMaskBuilder.Set(course.CourseIndex);
-
-        return new CandidateSolution(
-            CourseOrder.Add(course),
-            includedCoursesMaskBuilder.ToBitMask(),
-            unvisitedControlsMaskBuilder.ToBitMask(),
-            RarityScore - rarityGain);
+        var potentialRarityGain = GetPotentialRarityGain(course, context.ControlRarityLookup);
+        return new CandidateBlueprint(this, course, potentialRarityGain);
     }
 
     /// <summary>

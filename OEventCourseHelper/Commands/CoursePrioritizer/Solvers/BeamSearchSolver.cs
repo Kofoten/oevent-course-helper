@@ -10,7 +10,7 @@ internal class BeamSearchSolver(int BeamWidth)
 {
     public const float MaximumRarity = 1.0F;
 
-    private static readonly CandidateSolution.RarityComparer candidateSolutionComparer = new();
+    private static readonly CandidateBlueprint.RarityComparer candidateComparer = new();
 
     /// <summary>
     /// Uses a beam search to priotitize the courses in <paramref name="dataSet"/> and marking the courses
@@ -56,13 +56,13 @@ internal class BeamSearchSolver(int BeamWidth)
 
         while (beam.Count > 0)
         {
-            var beamBuilder = new BeamBuilder<CandidateSolution>(BeamWidth, candidateSolutionComparer);
+            var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer);
 
             foreach (var candidate in beam)
             {
                 if (candidate.IsComplete)
                 {
-                    beamBuilder.Insert(candidate);
+                    beamBuilder.Insert(new CandidateBlueprint(candidate));
                     continue;
                 }
 
@@ -73,22 +73,14 @@ internal class BeamSearchSolver(int BeamWidth)
                     for (int i = 0; i < context.CourseMaskBucketCount; i++)
                     {
                         validCoursesMaskBuilder.OrBucketAt(i, coursesWithControl);
+                        validCoursesMaskBuilder.AndNotBucketAt(i, context.DominatedCoursesMask);
+                        validCoursesMaskBuilder.AndNotBucketAt(i, candidate.IncludedCoursesMask);
                     }
                 }
 
                 foreach (var courseIndex in validCoursesMaskBuilder.ToBitMask())
                 {
                     var course = context.Courses[courseIndex];
-
-                    if (candidate.IncludedCoursesMask[course.CourseIndex])
-                    {
-                        continue;
-                    }
-
-                    if (context.DominatedCoursesMask[course.CourseIndex])
-                    {
-                        continue;
-                    }
 
                     var rarityGain = candidate.GetPotentialRarityGain(course, context.ControlRarityLookup);
                     if (rarityGain <= 0.0F)
@@ -97,7 +89,7 @@ internal class BeamSearchSolver(int BeamWidth)
                     }
 
                     var projectedScore = candidate.RarityScore - rarityGain;
-                    if (beamBuilder.IsFull && projectedScore >= beamBuilder.Worst()?.RarityScore)
+                    if (beamBuilder.IsFull && projectedScore >= beamBuilder.Worst.RarityScore)
                     {
                         continue;
                     }
@@ -107,7 +99,7 @@ internal class BeamSearchSolver(int BeamWidth)
                 }
             }
 
-            beam = beamBuilder.ToImmutableList();
+            beam = beamBuilder.ToImmutableList(x => x.Materialize(context));
             if (beam.Count > 0 && beam[0].IsComplete)
             {
                 break;
@@ -289,12 +281,26 @@ internal class BeamSearchSolver(int BeamWidth)
         /// <summary>
         /// Gets the currently worst item.
         /// </summary>
-        public T? Worst() => beam.Count > 0 ? beam[^1] : default;
+        public T? Worst => beam.Count > 0 ? beam[^1] : default;
 
         /// <summary>
         /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
         /// </summary>
         public ImmutableList<T> ToImmutableList() => [.. beam];
+
+        /// <summary>
+        /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
+        /// </summary>
+        public ImmutableList<TResult> ToImmutableList<TResult>(Func<T, TResult> selector)
+        {
+            var resultBuilder = ImmutableList.CreateBuilder<TResult>();
+            foreach (var item in beam)
+            {
+                resultBuilder.Add(selector(item));
+            }
+
+            return resultBuilder.ToImmutableList();
+        }
     }
 
     public record PriorityResult(string Name, bool IsRequired);

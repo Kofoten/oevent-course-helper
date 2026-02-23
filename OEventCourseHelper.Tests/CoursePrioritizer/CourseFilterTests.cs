@@ -10,10 +10,13 @@ public class CourseFilterTests
     public void Matches_SouldMatchCourse()
     {
         // Setup
+        var maskBuilder = new BitMask.Builder();
+        maskBuilder.Set(0);
+
         var builder = new Course.Builder()
         {
             CourseName = "Course",
-            ControlMask = [1Ul],
+            ControlMaskBuilder = maskBuilder,
             ControlCount = 1,
         };
 
@@ -30,10 +33,12 @@ public class CourseFilterTests
     public void Matches_ShouldNotMatchEmptyCourses()
     {
         // Setup
+        var maskBuilder = new BitMask.Builder();
+
         var builder = new Course.Builder()
         {
             CourseName = "Empty",
-            ControlMask = [0Ul],
+            ControlMaskBuilder = maskBuilder,
             ControlCount = 0,
         };
 
@@ -50,10 +55,13 @@ public class CourseFilterTests
     public void Matches_ShouldNotMatchCourseNotContainingAnyFilterString()
     {
         // Setup
+        var maskBuilder = new BitMask.Builder();
+        maskBuilder.Set(2);
+
         var builder = new Course.Builder()
         {
             CourseName = "NoMatch",
-            ControlMask = [4Ul],
+            ControlMaskBuilder = maskBuilder,
             ControlCount = 1,
         };
 
