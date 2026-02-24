@@ -48,7 +48,7 @@ public class CandidateSolutionTests
         var solution = new CandidateSolution([], new([0UL]), new([31UL]), 1.72F);
 
         // Act
-        var actual = solution.AddCourse(course, context);
+        var actual = new CandidateBlueprint(solution, course, 0.8F);
 
         // Assert
         //actual.CourseOrder.Should().HaveCount(1);
@@ -71,15 +71,12 @@ public class CandidateSolutionTests
             .ToImmutableArray();
 
         var course = new Course(0, "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
-        var context = new BeamSearchSolverContext(totalEventControlCount, 48.0F, 2, 1, [course], controlRarityLookup, new([]), []);
         var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 48.0F);
 
         // Act
         var actualRarityGain = solution.GetPotentialRarityGain(course, controlRarityLookup);
-        var actualSolution = solution.AddCourse(course, context);
 
         // Assert
         actualRarityGain.Should().Be(24.0F);
-        actualSolution.RarityScore.Should().Be(24.0F);
     }
 }

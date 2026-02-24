@@ -94,12 +94,12 @@ internal class BeamSearchSolver(int BeamWidth)
                         continue;
                     }
 
-                    var expanded = candidate.AddCourse(course, context);
-                    beamBuilder.Insert(expanded);
+                    var blueprint = new CandidateBlueprint(candidate, course, projectedScore);
+                    beamBuilder.Insert(blueprint);
                 }
             }
 
-            beam = beamBuilder.ToImmutableList(x => x.Materialize(context));
+            beam = beamBuilder.ToImmutableList(x => x.Materialize());
             if (beam.Count > 0 && beam[0].IsComplete)
             {
                 break;
@@ -223,7 +223,7 @@ internal class BeamSearchSolver(int BeamWidth)
                 continue;
             }
 
-            if (!course.ControlMask.IsIdenticalTo(other.ControlMask)
+            if (!course.ControlMask.Equals(other.ControlMask)
                 ||
                 string.CompareOrdinal(course.CourseName, other.CourseName) > 0)
             {

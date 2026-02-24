@@ -35,19 +35,6 @@ internal record CandidateSolution(
     }
 
     /// <summary>
-    /// Computes a new instance of <see cref="CandidateSolution"/> based on <paramref name="course"/> leaving
-    /// the source <see cref="CandidateSolution"/> unmodified.
-    /// </summary>
-    /// <param name="course">The <see cref="Course"/> to add to the solution.</param>
-    /// <param name="context">The context of the current search.</param>
-    /// <returns>A new instance of <see cref="CandidateSolution"/> containing the modified state.</returns>
-    public CandidateBlueprint AddCourse(Course course, BeamSearchSolverContext context)
-    {
-        var potentialRarityGain = GetPotentialRarityGain(course, context.ControlRarityLookup);
-        return new CandidateBlueprint(this, course, potentialRarityGain);
-    }
-
-    /// <summary>
     /// Calculates the rarity that would be gained by adding <paramref name="course"/> to this solution.
     /// </summary>
     /// <param name="course">The <see cref="Course"/> to calculate rarity gain for.</param>
@@ -65,32 +52,5 @@ internal record CandidateSolution(
         }
 
         return rarityGain;
-    }
-
-    /// <summary>
-    /// A comparere for <see cref="CandidateSolution"/> that prioritizes control rarity over control count.
-    /// </summary>
-    internal class RarityComparer() : IComparer<CandidateSolution>
-    {
-        public int Compare(CandidateSolution? x, CandidateSolution? y)
-        {
-            if (x is null)
-            {
-                return y is null ? 0 : -1;
-            }
-
-            if (y is null)
-            {
-                return 1;
-            }
-
-            var rarityComparison = x.RarityScore.CompareTo(y.RarityScore);
-            if (rarityComparison != 0)
-            {
-                return rarityComparison;
-            }
-
-            return x.CourseCount.CompareTo(y.CourseCount);
-        }
     }
 }
