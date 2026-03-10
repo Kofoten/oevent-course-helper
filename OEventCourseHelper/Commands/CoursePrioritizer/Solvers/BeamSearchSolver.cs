@@ -21,7 +21,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>True if a solution could be found; otherwise False</returns>
     public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out PriorityResult[]? solution)
     {
-        var context = BuildContext(dataSet);
+        var context = CreateContext(dataSet);
         var requiredCoursesResult = FindAndOrderRequiredCourses(context);
         if (requiredCoursesResult is null)
         {
@@ -51,6 +51,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>The required courses ordered by their respective priority.</returns>
     private RequiredCoursesResult? FindAndOrderRequiredCourses(BeamSearchSolverContext context)
     {
+        var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
         ImmutableList<CandidateSolution> beam = [initialSolution];
 
@@ -66,19 +67,18 @@ internal class BeamSearchSolver(int BeamWidth)
                     continue;
                 }
 
-                var validCoursesMaskBuilder = new BitMask.Builder(context.CourseMaskBucketCount);
                 foreach (var controlIndex in candidate.UnvisitedControlsMask)
                 {
                     var coursesWithControl = context.CourseInvertedIndex[controlIndex];
                     for (int i = 0; i < context.CourseMaskBucketCount; i++)
                     {
-                        validCoursesMaskBuilder.OrBucketAt(i, coursesWithControl);
-                        validCoursesMaskBuilder.AndNotBucketAt(i, context.DominatedCoursesMask);
-                        validCoursesMaskBuilder.AndNotBucketAt(i, candidate.IncludedCoursesMask);
+                        validCoursesMaskWorkspace.OrBucketAt(i, coursesWithControl);
+                        validCoursesMaskWorkspace.AndNotBucketAt(i, context.DominatedCoursesMask);
+                        validCoursesMaskWorkspace.AndNotBucketAt(i, candidate.IncludedCoursesMask);
                     }
                 }
 
-                foreach (var courseIndex in validCoursesMaskBuilder.ToBitMask())
+                foreach (var courseIndex in validCoursesMaskWorkspace)
                 {
                     var course = context.Courses[courseIndex];
 
@@ -97,6 +97,8 @@ internal class BeamSearchSolver(int BeamWidth)
                     var blueprint = new CandidateBlueprint(candidate, course, projectedScore);
                     beamBuilder.Insert(blueprint);
                 }
+
+                validCoursesMaskWorkspace.Clear();
             }
 
             beam = beamBuilder.ToImmutableList(x => x.Materialize());
@@ -115,11 +117,11 @@ internal class BeamSearchSolver(int BeamWidth)
     }
 
     /// <summary>
-    /// Builds a new <see cref="BeamSearchSolverContext"/> from <paramref name="dataSet"/>.
+    /// Creates a new <see cref="BeamSearchSolverContext"/> from <paramref name="dataSet"/>.
     /// </summary>
     /// <param name="dataSet">The data set from wich to build the context.</param>
     /// <returns>A new instance of <see cref="BeamSearchSolverContext"/>.</returns>
-    public static BeamSearchSolverContext BuildContext(EventDataSet dataSet)
+    public static BeamSearchSolverContext CreateContext(EventDataSet dataSet)
     {
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
         var controlFrequencies = new int[dataSet.TotalEventControlCount];

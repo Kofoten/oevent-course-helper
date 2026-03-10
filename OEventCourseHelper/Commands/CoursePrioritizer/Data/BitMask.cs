@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -10,22 +11,26 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     public BitMask(ImmutableArray<ulong> buckets)
     {
         Buckets = buckets;
-        IsZero = IsZeroMask(buckets.AsSpan());
+        IsZero = BitOps.IsZero(this);
     }
 
     public readonly ImmutableArray<ulong> Buckets { get; private init; }
 
     public bool IsZero { get; private init; }
 
-    public bool this[int index] => IsSet(Buckets.AsSpan(), index);
+    public bool this[int index] => BitOps.IsSet(this, index);
 
     public int BucketCount => Buckets.Length;
 
-    public BitMaskEnumerator GetEnumerator() => new(Buckets);
+    public BitMaskEnumerator GetEnumerator() => new(this);
 
-    #region Instance Methods
+    public static implicit operator ReadOnlySpan<ulong>(BitMask mask) => mask.Buckets.AsSpan();
+
     public BitMask Set(int index)
     {
+        var bucketIndex = BitOps.GetBucketCount(index);
+        BitOps.ThrowIfOutOfBounds(bucketIndex, this);
+
         var builder = Builder.From(this);
         builder.Set(index);
         return builder.ToBitMask();
@@ -33,108 +38,26 @@ internal readonly record struct BitMask : IEquatable<BitMask>
 
     public BitMask AndNot(BitMask other)
     {
-        ThrowIfDifferentLength(other, nameof(AndNot));
+        BitOps.ThrowIfDifferentLength(this, other, nameof(AndNot));
 
         var builder = Builder.From(this);
         builder.AndNot(other);
         return builder.ToBitMask();
     }
 
-    /// <summary>
-    /// Checks if <paramref name="other"/> is a subset of this.
-    /// </summary>
-    /// <param name="other">The <see cref="BitMask"/> to check.</param>
-    /// <returns>True if <paramref name="other"/> is a subset of this; otherwise False.</returns>
     public bool IsSubsetOf(BitMask other)
     {
-        ThrowIfDifferentLength(other, nameof(IsSubsetOf));
+        BitOps.ThrowIfDifferentLength(this, other, nameof(IsSubsetOf));
 
-        for (int i = 0; i < BucketCount; i++)
-        {
-            if ((Buckets[i] & ~other.Buckets[i]) != 0)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-    #endregion
-
-    #region Helpers
-    public static bool Set(Span<ulong> mask, int index)
-    {
-        ThrowIfOutOfBounds(mask, index);
-
-        var (bucketIndex, bucketMask) = GetBucketMask(index);
-        if (InternalIsSet(mask, bucketIndex, bucketMask))
-        {
-            return false;
-        }
-
-        mask[bucketIndex] |= bucketMask;
-        return true;
+        return BitOps.IsSubsetOf(this, other);
     }
 
-    public static bool IsSet(ReadOnlySpan<ulong> mask, int index)
-    {
-        ThrowIfOutOfBounds(mask, index);
-
-        var (bucketIndex, bucketMask) = GetBucketMask(index);
-        return InternalIsSet(mask, bucketIndex, bucketMask);
-    }
-
-    public static bool IsZeroMask(ReadOnlySpan<ulong> mask)
-    {
-        foreach (var bucket in mask)
-        {
-            if (bucket != 0UL)
-            {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public static int GetBucketCount(int bitCount) => ((bitCount - 1) >> 6) + 1;
-    #endregion
-
-    #region Internals
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static (int bucketIndex, ulong bucketMask) GetBucketMask(int index) => (index >> 6, 1UL << (index & 63));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool InternalIsSet(ReadOnlySpan<ulong> mask, int bucketIndex, ulong bucketMask)
-        => (mask[bucketIndex] & bucketMask) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ThrowIfDifferentLength(BitMask other, string operationName)
-    {
-        if (BucketCount != other.BucketCount)
-        {
-            throw new InvalidOperationException($"Can not perform '{operationName}' on BitMasks of different lengths.");
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ThrowIfOutOfBounds(ReadOnlySpan<ulong> mask, int index)
-        => ThrowIfOutOfBounds(mask.Length, index);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void ThrowIfOutOfBounds(int length, int index)
-    {
-        if (index < 0 || index >= (length << 6))
-        {
-            throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
-        }
-    }
-    #endregion
+    public static int GetBucketCount(int bitCount) => BitOps.GetBucketCount(bitCount);
 
     #region Factories
-    public static BitMask Fill(int count)
+    public static BitMask Fill(int bitCount)
     {
-        var bucketCount = GetBucketCount(count);
+        var bucketCount = BitOps.GetBucketCount(bitCount);
         var mask = new ulong[bucketCount];
 
         for (int i = 0; i < bucketCount - 1; i++)
@@ -142,7 +65,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
             mask[i] = ulong.MaxValue;
         }
 
-        var remainder = count & 63;
+        var remainder = bitCount & 63;
         if (remainder == 0)
         {
             mask[^1] = ulong.MaxValue;
@@ -156,9 +79,9 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         return new BitMask(immutable);
     }
 
-    public static BitMask Zero(int count)
+    public static BitMask Zero(int bitCount)
     {
-        var bucketCount = GetBucketCount(count);
+        var bucketCount = BitOps.GetBucketCount(bitCount);
         var mask = new ulong[bucketCount];
         var immutable = ImmutableCollectionsMarshal.AsImmutableArray(mask);
         return new BitMask(immutable);
@@ -212,9 +135,9 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     #endregion
 
     #region Enumerators
-    public ref struct BitMaskEnumerator(ImmutableArray<ulong> buckets)
+    public ref struct BitMaskEnumerator(ReadOnlySpan<ulong> buckets)
     {
-        private readonly ImmutableArray<ulong> buckets = buckets;
+        private readonly ReadOnlySpan<ulong> buckets = buckets;
         private int bucketIndex = 0;
         private ulong currentBucket = 0;
         private int currentBit = -1;
@@ -244,9 +167,12 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     public class Builder
     {
         private readonly int initializedBucketCount;
-        private ulong[] buckets;
+        private ulong[]? buckets;
 
-        public bool IsZero => IsZeroMask(buckets);
+        public bool IsZero => BitOps.IsZero(buckets);
+
+        [MemberNotNullWhen(false, nameof(buckets))]
+        public bool IsConsumed => buckets is null;
 
         public Builder()
         {
@@ -260,6 +186,12 @@ internal readonly record struct BitMask : IEquatable<BitMask>
             buckets = new ulong[bucketCount];
         }
 
+        [MemberNotNull(nameof(buckets))]
+        public void Initialize(ulong[] buckets)
+        {
+            this.buckets = buckets;
+        }
+
         public bool Set(int index)
         {
             if (index < 0)
@@ -267,9 +199,9 @@ internal readonly record struct BitMask : IEquatable<BitMask>
                 throw new ArgumentOutOfRangeException(nameof(index), "Index must be a positive integer or zero.");
             }
 
-            var requiredBucketCount = GetBucketCount(index + 1);
+            var requiredBucketCount = BitOps.GetBucketCount(index + 1);
             ReziseIfRequired(requiredBucketCount);
-            return BitMask.Set(buckets, index);
+            return BitOps.Set(buckets, index);
         }
 
         public void AndNot(BitMask other)
@@ -277,29 +209,14 @@ internal readonly record struct BitMask : IEquatable<BitMask>
             ReziseIfRequired(other.BucketCount);
             for (int i = 0; i < other.BucketCount; i++)
             {
-                InnerAndNotBucketAt(i, other);
+                BitOps.AndNotBucketAt(buckets, i, other);
             }
-        }
-
-        public void AndNotBucketAt(int bucketIndex, BitMask other)
-        {
-            if (bucketIndex < 0 || bucketIndex >= other.Buckets.Length)
-            {
-                throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
-            }
-
-            ReziseIfRequired(bucketIndex + 1);
-            InnerAndNotBucketAt(bucketIndex, other);
-        }
-
-        public void OrBucketAt(int bucketIndex, BitMask other)
-        {
-            ReziseIfRequired(bucketIndex + 1);
-            buckets[bucketIndex] |= other.Buckets[bucketIndex];
         }
 
         public BitMask ToBitMask()
         {
+            ThrowIfConsumed();
+
             if (initializedBucketCount == -1)
             {
                 throw new InvalidOperationException("Can not create a bit mask with an unknown bucket count.");
@@ -317,33 +234,184 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         {
             ReziseIfRequired(exactBucketCount);
             var immutable = ImmutableCollectionsMarshal.AsImmutableArray(buckets);
-            buckets = [];
+            buckets = null;
             return new BitMask(immutable);
         }
 
         public static Builder From(BitMask mask)
         {
             var builder = new Builder(mask.BucketCount);
+#pragma warning disable CS8604 // builder.buckets can not be null on a fresh instance.
             mask.Buckets.CopyTo(builder.buckets);
+#pragma warning restore CS8604
             return builder;
         }
 
-        #region Internal
+        [MemberNotNull(nameof(buckets))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ReziseIfRequired(int requiredBucketCount)
         {
+            ThrowIfConsumed();
+
             if (buckets.Length < requiredBucketCount)
             {
                 Array.Resize(ref buckets, requiredBucketCount);
             }
         }
 
+        [MemberNotNull(nameof(buckets))]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void InnerAndNotBucketAt(int bucketIndex, BitMask other)
+        private void ThrowIfConsumed()
         {
-            buckets[bucketIndex] &= ~other.Buckets[bucketIndex];
+            if (IsConsumed)
+            {
+                throw new InvalidOperationException("Can not operate on a builder that is consumed.");
+            }
         }
-        #endregion
     }
     #endregion
+
+    #region Workspace
+    public readonly ref struct Workspace(int bucketCount)
+    {
+        private readonly ulong[] buckets = new ulong[bucketCount];
+
+        public void AndBucketAt(int bucketIndex, BitMask other)
+        {
+            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndBucketAt));
+            BitOps.AndBucketAt(buckets, bucketIndex, other);
+        }
+
+        public void AndNotBucketAt(int bucketIndex, BitMask other)
+        {
+            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndNotBucketAt));
+            BitOps.AndNotBucketAt(buckets, bucketIndex, other);
+        }
+
+        public void OrBucketAt(int bucketIndex, BitMask other)
+        {
+            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(OrBucketAt));
+            BitOps.OrBucketAt(buckets, bucketIndex, other);
+        }
+
+        public void Clear()
+        {
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                buckets[i] = 0UL;
+            }
+        }
+
+        public BitMaskEnumerator GetEnumerator() => new(buckets);
+    }
+    #endregion
+}
+
+file static class BitOps
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int GetBucketCount(int bitCount) => ((bitCount - 1) >> 6) + 1;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsSet(ReadOnlySpan<ulong> mask, int index)
+    {
+        var (bucketIndex, bucketMask) = GetBucketMask(index);
+        return InternalIsSet(mask, bucketIndex, bucketMask);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsZero(ReadOnlySpan<ulong> mask)
+    {
+        foreach (var bucket in mask)
+        {
+            if (bucket != 0UL)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool Set(Span<ulong> target, int index)
+    {
+        var (bucketIndex, bucketMask) = GetBucketMask(index);
+        if (InternalIsSet(target, bucketIndex, bucketMask))
+        {
+            return false;
+        }
+
+        target[bucketIndex] |= bucketMask;
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void AndBucketAt(Span<ulong> target, int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        target[bucketIndex] &= other[bucketIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void AndNotBucketAt(Span<ulong> target, int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        target[bucketIndex] &= ~other[bucketIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void OrBucketAt(Span<ulong> target, int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        target[bucketIndex] |= other[bucketIndex];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsSubsetOf(ReadOnlySpan<ulong> self, ReadOnlySpan<ulong> other)
+    {
+        for (int i = 0; i < self.Length; i++)
+        {
+            if ((self[i] & ~other[i]) != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfDifferentLengthOrOutOfBounds(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b, int bucketIndex, string operationName)
+    {
+        ThrowIfDifferentLength(a, b, operationName);
+        ThrowIfOutOfBounds(bucketIndex, a);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfDifferentLength(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b, string operationName)
+    {
+        if (a.Length != b.Length)
+        {
+            throw new InvalidOperationException($"Can not perform '{operationName}' on masks with different lengths.");
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void ThrowIfOutOfBounds(int bucketIndex, ReadOnlySpan<ulong> mask)
+    {
+        if (bucketIndex < 0 || bucketIndex >= mask.Length)
+        {
+            throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (int bucketIndex, ulong bucketMask) GetBucketMask(int index)
+    {
+        return (index >> 6, 1UL << (index & 63));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool InternalIsSet(ReadOnlySpan<ulong> target, int bucketIndex, ulong bucketMask)
+    {
+        return (target[bucketIndex] & bucketMask) != 0;
+    }
 }
