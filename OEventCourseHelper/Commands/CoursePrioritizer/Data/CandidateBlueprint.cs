@@ -5,7 +5,6 @@ internal readonly struct CandidateBlueprint
     private readonly CandidateSolution parent;
     private readonly Course? addedCourse;
 
-
     public int CourseCount { get; private init; }
     public float RarityScore { get; private init; }
 

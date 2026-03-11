@@ -101,20 +101,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
             return false;
         }
 
-        if (!Buckets.Length.Equals(other.Buckets.Length))
-        {
-            return false;
-        }
-
-        for (int i = 0; i < Buckets.Length; i++)
-        {
-            if (!Buckets[i].Equals(other.Buckets[i]))
-            {
-                return false;
-            }
-        }
-
-        return true;
+        return Buckets.AsSpan().SequenceEqual(other);
     }
 
     public override int GetHashCode()
@@ -131,6 +118,19 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         }
 
         return hash.ToHashCode();
+    }
+    #endregion
+
+    #region Types
+    public readonly record struct BucketMask(int BucketIndex, ulong BucketValue)
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static BucketMask FromBitIndex(int bitIndex)
+        {
+            return new(
+                BitOps.GetBucketIndex(bitIndex),
+                BitOps.GetBucketValue(bitIndex));
+        }
     }
     #endregion
 
@@ -319,16 +319,15 @@ file static class BitOps
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static (int bucketIndex, ulong bucketMask) GetBucketMask(int bitIndex)
+    public static ulong GetBucketValue(int bitIndex)
     {
-        return (GetBucketIndex(bitIndex), 1UL << (bitIndex & 63));
+        return 1UL << (bitIndex & 63);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsSet(ReadOnlySpan<ulong> mask, int bitIndex)
     {
-        var (bucketIndex, bucketMask) = GetBucketMask(bitIndex);
-        return InternalIsSet(mask, bucketIndex, bucketMask);
+        return InternalIsSet(mask, BitMask.BucketMask.FromBitIndex(bitIndex));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -348,13 +347,13 @@ file static class BitOps
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Set(Span<ulong> target, int bitIndex)
     {
-        var (bucketIndex, bucketMask) = GetBucketMask(bitIndex);
-        if (InternalIsSet(target, bucketIndex, bucketMask))
+        var bucketMask = BitMask.BucketMask.FromBitIndex(bitIndex);
+        if (InternalIsSet(target, bucketMask))
         {
             return false;
         }
 
-        target[bucketIndex] |= bucketMask;
+        target[bucketMask.BucketIndex] |= bucketMask.BucketValue;
         return true;
     }
 
@@ -416,8 +415,8 @@ file static class BitOps
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static bool InternalIsSet(ReadOnlySpan<ulong> target, int bucketIndex, ulong bucketMask)
+    private static bool InternalIsSet(ReadOnlySpan<ulong> target, BitMask.BucketMask bucketMask)
     {
-        return (target[bucketIndex] & bucketMask) != 0;
+        return (target[bucketMask.BucketIndex] & bucketMask.BucketValue) != 0;
     }
 }
