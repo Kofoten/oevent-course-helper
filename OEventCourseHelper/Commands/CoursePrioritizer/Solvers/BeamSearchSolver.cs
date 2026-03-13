@@ -11,6 +11,7 @@ internal class BeamSearchSolver(int BeamWidth)
     public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
 
     private static readonly CandidateBlueprint.RarityComparer candidateComparer = new();
+    private static readonly CandidateBlueprint.TieBreakComparer tieBreakComparer = new();
 
     /// <summary>
     /// Uses a beam search to priotitize the courses in <paramref name="dataSet"/> and marking the courses
@@ -57,7 +58,7 @@ internal class BeamSearchSolver(int BeamWidth)
 
         while (beam.Count > 0)
         {
-            var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer);
+            var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer, tieBreakComparer);
 
             foreach (var candidate in beam)
             {
@@ -243,7 +244,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <typeparam name="T">The item type.</typeparam>
     /// <param name="BeamWidth">The maximum width of the beam.</param>
     /// <param name="comparer">The comparere to use.</param>
-    private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer)
+    private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer, IComparer<T>? tieBreaker = null)
     {
         private readonly List<T> beam = new(BeamWidth);
 
@@ -259,12 +260,20 @@ internal class BeamSearchSolver(int BeamWidth)
         public bool Insert(T item)
         {
             int index = beam.BinarySearch(item, comparer);
-
-            if (index < 0)
+            if (index >= 0)
             {
-                index = ~index;
+                if (tieBreaker is not null
+                    &&
+                    tieBreaker.Compare(item, beam[index]) < 0)
+                {
+                    beam[index] = item;
+                    return true;
+                }
+
+                return false;
             }
 
+            index = ~index;
             if (index < BeamWidth)
             {
                 beam.Insert(index, item);

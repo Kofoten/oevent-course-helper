@@ -57,12 +57,6 @@ internal readonly struct CandidateBlueprint
                 return 1;
             }
 
-            var lengthResult = x.parent.IncludedCoursesMask.BucketCount.CompareTo(y.parent.IncludedCoursesMask.BucketCount);
-            if (lengthResult != 0)
-            {
-                return lengthResult;
-            }
-
             var xBucketMask = BitMask.BucketMask.FromBitIndex(x.addedCourse.CourseIndex);
             var yBucketMask = BitMask.BucketMask.FromBitIndex(y.addedCourse.CourseIndex);
 
@@ -88,6 +82,29 @@ internal readonly struct CandidateBlueprint
             }
 
             return 0;
+        }
+    }
+
+    public class TieBreakComparer : IComparer<CandidateBlueprint>
+    {
+        public int Compare(CandidateBlueprint x, CandidateBlueprint y)
+        {
+            var rarityResult = x.parent.RarityScore.CompareTo(y.parent.RarityScore);
+            if (rarityResult != 0)
+            {
+                return rarityResult;
+            }
+
+            if (x.parent.CourseOrder.IsEmpty)
+            {
+                return y.parent.CourseOrder.IsEmpty ? 0 : -1;
+            }
+            else if (y.parent.CourseOrder.IsEmpty)
+            {
+                return 1;
+            }
+
+            return x.parent.CourseOrder[0].CourseIndex.CompareTo(y.parent.CourseOrder[0].CourseIndex);
         }
     }
 }
