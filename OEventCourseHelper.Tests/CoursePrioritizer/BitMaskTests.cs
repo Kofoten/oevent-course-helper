@@ -9,8 +9,8 @@ public class BitMaskTests
     public void IsSubsetOf_ShouldReturnTrue()
     {
         // Setup
-        var a = new BitMask([0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL]);
-        var b = new BitMask([10UL, 10Ul]);
+        var a = new BitMask([0b10101010101UL, 0b10101010101UL]);
+        var b = new BitMask([0b10000000101UL, 0b00001010000UL]);
 
         // Act
         var actual = b.IsSubsetOf(a);
@@ -23,8 +23,8 @@ public class BitMaskTests
     public void IsSubsetOf_ShouldReturnFalse()
     {
         // Setup
-        var a = new BitMask([0xAAAAAAAAAAAAAAAAUL, 0xAAAAAAAAAAAAAAAAUL]);
-        var b = new BitMask([5UL, 5Ul]);
+        var a = new BitMask([0b10101010101UL, 0b10101010101UL]);
+        var b = new BitMask([0b11000100101UL, 0b00001110000UL]);
 
         // Act
         var actual = b.IsSubsetOf(a);

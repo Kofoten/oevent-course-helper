@@ -11,8 +11,8 @@ public class CandidateSolutionRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXHasLowerRarityScore()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([]), new([]), 0.5F));
-        var y = new CandidateBlueprint(new([], new([]), new([]), 1.0F));
+        var x = new CandidateBlueprint(new([], new([]), new([]), 5000000UL));
+        var y = new CandidateBlueprint(new([], new([]), new([]), 10000000UL));
 
         // Act
         var actual = comparer.Compare(x, y);
@@ -21,7 +21,7 @@ public class CandidateSolutionRarityComparerTests
         actual.Should().BeLessThan(0);
     }
 
-    [Fact]
+    [Fact] // This test is broken
     public void Compare_ShouldReturnNegative_WhenRarityScoreIsEqualAndXHasFewerCourses()
     {
         // Setup
@@ -29,8 +29,8 @@ public class CandidateSolutionRarityComparerTests
         var courseB = new Course(1, "B", new([]), 0);
         var courseC = new Course(2, "C", new([]), 0);
 
-        var x = new CandidateBlueprint(new([courseA], new([]), new([]), 0.5F));
-        var y = new CandidateBlueprint(new([courseB, courseC], new([]), new([]), 0.5F));
+        var x = new CandidateBlueprint(new([courseA], new([]), new([]), 5000000UL));
+        var y = new CandidateBlueprint(new([courseB, courseC], new([]), new([]), 5000000UL));
 
         // Act
         var actual = comparer.Compare(x, y);

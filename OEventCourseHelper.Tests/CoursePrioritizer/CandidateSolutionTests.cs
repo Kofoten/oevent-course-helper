@@ -12,12 +12,12 @@ public class CandidateSolutionTests
         // Setup
         var totalEventControlCount = 96;
         var controlRarityLookup = Enumerable.Range(0, totalEventControlCount)
-            .Select(_ => 0.5F)
+            .Select(_ => 5000000UL)
             .ToImmutableArray();
 
         var context = new BeamSearchSolverContext(
             totalEventControlCount,
-            controlRarityLookup.Sum(),
+            controlRarityLookup.Aggregate(0UL, (acc, x) => acc + x),
             2,
             1,
             [],
@@ -30,7 +30,7 @@ public class CandidateSolutionTests
 
         // Assert
         actual.CourseOrder.Should().HaveCount(0);
-        actual.RarityScore.Should().Be(48.0F);
+        actual.RarityScore.Should().Be(480000000UL);
         actual.IncludedCoursesMask.Buckets.Should().HaveCount(1);
         actual.IncludedCoursesMask.Buckets[0].Should().Be(0);
         actual.UnvisitedControlsMask.Buckets.Should().HaveCount(2);
@@ -42,13 +42,13 @@ public class CandidateSolutionTests
     public void AddCourse_ShouldAddCourseNameAndFlipBitsAndReduceRarityScore()
     {
         // Setup
-        ImmutableArray<float> controlRarityLookup = [0.5F, 0.2F, 0.25F, 0.67F, 0.1F];
+        ImmutableArray<ulong> controlRarityLookup = [5000000UL, 2000000UL, 2500000UL, 6700000UL, 1000000UL];
         var course = new Course(0, "A", new([19UL]), 3);
-        var context = new BeamSearchSolverContext(5, 1.72F, 1, 1, [course], controlRarityLookup, new([]), []);
-        var solution = new CandidateSolution([], new([0UL]), new([31UL]), 1.72F);
+        var context = new BeamSearchSolverContext(5, 17200000UL, 1, 1, [course], controlRarityLookup, new([]), []);
+        var solution = new CandidateSolution([], new([0UL]), new([31UL]), 17200000UL);
 
         // Act
-        var actual = new CandidateBlueprint(solution, course, 0.8F);
+        var actual = new CandidateBlueprint(solution, course, 8000000UL);
 
         // Assert
         //actual.CourseOrder.Should().HaveCount(1);
@@ -57,7 +57,7 @@ public class CandidateSolutionTests
         //actual.UnvisitedControlsMask.Buckets.Should().HaveCount(1);
         //actual.UnvisitedControlsMask.Buckets[0].Should().Be(12UL);
         actual.CourseCount.Should().Be(1);
-        actual.RarityScore.Should().Be(0.8F);
+        actual.RarityScore.Should().Be(8000000UL);
     }
 
     [Fact]
@@ -67,16 +67,16 @@ public class CandidateSolutionTests
         var alternating = 0xAAAAAAAAAAAAAAAAUL;
         var totalEventControlCount = 96;
         var controlRarityLookup = Enumerable.Range(0, totalEventControlCount)
-            .Select(_ => 0.5F)
+            .Select(_ => 5000000UL)
             .ToImmutableArray();
 
         var course = new Course(0, "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
-        var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 48.0F);
+        var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 480000000UL);
 
         // Act
         var actualRarityGain = solution.GetPotentialRarityGain(course, controlRarityLookup);
 
         // Assert
-        actualRarityGain.Should().Be(24.0F);
+        actualRarityGain.Should().Be(240000000UL);
     }
 }

@@ -4,10 +4,10 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
 internal record BeamSearchSolverContext(
     int TotalEventControlCount,
-    float TotalControlRaritySum,
+    ulong TotalControlRaritySum,
     int ControlMaskBucketCount,
     int CourseMaskBucketCount,
     ImmutableArray<Course> Courses,
-    ImmutableArray<float> ControlRarityLookup,
+    ImmutableArray<ulong> ControlRarityLookup,
     BitMask DominatedCoursesMask,
     ImmutableArray<BitMask> CourseInvertedIndex);

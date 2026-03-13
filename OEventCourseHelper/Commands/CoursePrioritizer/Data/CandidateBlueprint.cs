@@ -6,7 +6,7 @@ internal readonly struct CandidateBlueprint
     private readonly Course? addedCourse;
 
     public int CourseCount { get; private init; }
-    public float RarityScore { get; private init; }
+    public ulong RarityScore { get; private init; }
 
     public CandidateBlueprint(CandidateSolution parent)
     {
@@ -16,7 +16,7 @@ internal readonly struct CandidateBlueprint
         RarityScore = parent.RarityScore;
     }
 
-    public CandidateBlueprint(CandidateSolution parent, Course addedCourse, float projectedRarityScore)
+    public CandidateBlueprint(CandidateSolution parent, Course addedCourse, ulong projectedRarityScore)
     {
         this.parent = parent;
         this.addedCourse = addedCourse;
@@ -48,10 +48,46 @@ internal readonly struct CandidateBlueprint
                 return rarityResult;
             }
 
-            // TODO: Fix exception for empty solution.
-            var xCourseIndex = x.parent.CourseOrder[0].CourseIndex;
-            var yCourseIndex = y.parent.CourseOrder[0].CourseIndex;
-            return xCourseIndex.CompareTo(yCourseIndex);
+            if (x.addedCourse is null)
+            {
+                return y.addedCourse is null ? 0 : -1;
+            }
+            else if (y.addedCourse is null)
+            {
+                return 1;
+            }
+
+            var lengthResult = x.parent.IncludedCoursesMask.BucketCount.CompareTo(y.parent.IncludedCoursesMask.BucketCount);
+            if (lengthResult != 0)
+            {
+                return lengthResult;
+            }
+
+            var xBucketMask = BitMask.BucketMask.FromBitIndex(x.addedCourse.CourseIndex);
+            var yBucketMask = BitMask.BucketMask.FromBitIndex(y.addedCourse.CourseIndex);
+
+            for (int i = 0; i < x.parent.IncludedCoursesMask.BucketCount; i++)
+            {
+                ulong xBucket = x.parent.IncludedCoursesMask.Buckets[i];
+                if (i == xBucketMask.BucketIndex)
+                {
+                    xBucket |= xBucketMask.BucketValue;
+                }
+
+                ulong yBucket = y.parent.IncludedCoursesMask.Buckets[i];
+                if (i == yBucketMask.BucketIndex)
+                {
+                    yBucket |= yBucketMask.BucketValue;
+                }
+
+                var bucketResult = xBucket.CompareTo(yBucket);
+                if (bucketResult != 0)
+                {
+                    return bucketResult;
+                }
+            }
+
+            return 0;
         }
     }
 }

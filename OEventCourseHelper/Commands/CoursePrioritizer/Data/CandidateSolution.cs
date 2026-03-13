@@ -9,7 +9,7 @@ internal record CandidateSolution(
     ImmutableList<Course> CourseOrder,
     BitMask IncludedCoursesMask,
     BitMask UnvisitedControlsMask,
-    float RarityScore)
+    ulong RarityScore)
 {
     /// <summary>
     /// Indicates if this solution covers all controls used in the orienteering event.
@@ -40,9 +40,9 @@ internal record CandidateSolution(
     /// <param name="course">The <see cref="Course"/> to calculate rarity gain for.</param>
     /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
     /// <returns>The calculated gain to this solution by including the provided <see cref="Course"/>.</returns>
-    public float GetPotentialRarityGain(Course course, ImmutableArray<float> controlRarityLookup)
+    public ulong GetPotentialRarityGain(Course course, ImmutableArray<ulong> controlRarityLookup)
     {
-        var rarityGain = 0.0F;
+        var rarityGain = 0UL;
         foreach (var controlIndex in course.ControlMask)
         {
             if (UnvisitedControlsMask[controlIndex])

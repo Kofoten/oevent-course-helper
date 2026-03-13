@@ -8,7 +8,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
 internal class BeamSearchSolver(int BeamWidth)
 {
-    public const float MaximumRarity = 1.0F;
+    public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
 
     private static readonly CandidateBlueprint.RarityComparer candidateComparer = new();
 
@@ -22,7 +22,7 @@ internal class BeamSearchSolver(int BeamWidth)
     public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out PriorityResult[]? solution)
     {
         var context = CreateContext(dataSet);
-        var requiredCoursesResult = FindAndOrderRequiredCourses(context);
+        var requiredCoursesResult = PerformBeamSearch(context);
         if (requiredCoursesResult is null)
         {
             solution = null;
@@ -49,7 +49,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// </summary>
     /// <param name="context">The context of the current search.</param>
     /// <returns>The required courses ordered by their respective priority.</returns>
-    private RequiredCoursesResult? FindAndOrderRequiredCourses(BeamSearchSolverContext context)
+    private BeamSearchSolverResult? PerformBeamSearch(BeamSearchSolverContext context)
     {
         var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
@@ -124,7 +124,7 @@ internal class BeamSearchSolver(int BeamWidth)
     public static BeamSearchSolverContext CreateContext(EventDataSet dataSet)
     {
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
-        var controlFrequencies = new int[dataSet.TotalEventControlCount];
+        var controlFrequencies = new ulong[dataSet.TotalEventControlCount];
         var courseInvertedIndex = new BitMask.Builder[dataSet.TotalEventControlCount];
         foreach (var course in dataSet.Courses)
         {
@@ -141,14 +141,14 @@ internal class BeamSearchSolver(int BeamWidth)
             }
         }
 
-        var totalControlRaritySum = 0.0F;
-        var controlRarityLookup = new float[dataSet.TotalEventControlCount];
+        var totalControlRaritySum = 0UL;
+        var controlRarityLookup = new ulong[dataSet.TotalEventControlCount];
         var immutableCourseInvertedIndicies = new BitMask[dataSet.TotalEventControlCount];
         for (int i = 0; i < dataSet.TotalEventControlCount; i++)
         {
             if (controlFrequencies[i] == 0)
             {
-                controlRarityLookup[i] = 0.0F;
+                controlRarityLookup[i] = 0UL;
             }
             else
             {
@@ -185,7 +185,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <param name="course">The <see cref="Course"> to check.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
-    private static bool IsDominated(Course course, ImmutableArray<Course> courses, ReadOnlySpan<float> controlRarityLookup)
+    private static bool IsDominated(Course course, ImmutableArray<Course> courses, ReadOnlySpan<ulong> controlRarityLookup)
     {
         var rarestValue = -1.0F;
         var indexOfRarest = -1;

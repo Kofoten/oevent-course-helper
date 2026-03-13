@@ -2,4 +2,4 @@
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
-internal record RequiredCoursesResult(BitMask Mask, ImmutableList<Course> Order);
+internal record BeamSearchSolverResult(BitMask Mask, ImmutableList<Course> Order);
