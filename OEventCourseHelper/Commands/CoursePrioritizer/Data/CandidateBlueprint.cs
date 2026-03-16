@@ -103,10 +103,9 @@ internal readonly struct CandidateBlueprint
                     yBucket |= yBucketMask.BucketValue;
                 }
 
-                var bucketResult = xBucket.CompareTo(yBucket);
-                if (bucketResult != 0)
+                if (xBucket != yBucket)
                 {
-                    return bucketResult;
+                    return xBucket.CompareTo(yBucket);
                 }
             }
 
