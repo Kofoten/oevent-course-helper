@@ -3,7 +3,7 @@
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
 /// <summary>
-/// Contains a possible solution on which courses are required for the test run.
+/// Contains a possible solution of which courses are required for the test run.
 /// </summary>
 internal record CandidateSolution(
     ImmutableList<Course> CourseOrder,

@@ -17,7 +17,7 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
         public Builder(string courseName)
             : this()
         {
-            this.CourseName = courseName;
+            CourseName = courseName;
         }
 
         /// <summary>

@@ -1,13 +1,27 @@
 ﻿namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 
+/// <summary>
+/// A blueprint used to materialize an instance of <see cref="CandidateSolution"/>.
+/// </summary>
 internal readonly struct CandidateBlueprint
 {
     private readonly CandidateSolution parent;
     private readonly Course? addedCourse;
 
+    /// <summary>
+    /// The number of courses that would be included in the materialized solution.
+    /// </summary>
     public int CourseCount { get; private init; }
+
+    /// <summary>
+    /// The rarity score of the solution that would be materialized.
+    /// </summary>
     public ulong RarityScore { get; private init; }
 
+    /// <summary>
+    /// Creates a new blueprint from a <see cref="CandidateSolution"/>.
+    /// </summary>
+    /// <param name="parent">The parent solution for the blueprint.</param>
     public CandidateBlueprint(CandidateSolution parent)
     {
         this.parent = parent;
@@ -16,6 +30,12 @@ internal readonly struct CandidateBlueprint
         RarityScore = parent.RarityScore;
     }
 
+    /// <summary>
+    /// Creates a new blueprint from a <see cref="CandidateSolution"/>, a <see cref="Course"/> and the projected rarity score.
+    /// </summary>
+    /// <param name="parent">The parent solution for the blueprint.</param>
+    /// <param name="addedCourse">The course to be included in the solution when materialized.</param>
+    /// <param name="projectedRarityScore">The projected rarity score when the course get added.</param>
     public CandidateBlueprint(CandidateSolution parent, Course addedCourse, ulong projectedRarityScore)
     {
         this.parent = parent;
@@ -24,6 +44,10 @@ internal readonly struct CandidateBlueprint
         RarityScore = projectedRarityScore;
     }
 
+    /// <summary>
+    /// Materializes a <see cref="CandidateSolution"/> based on this blueprint.
+    /// </summary>
+    /// <returns>A new instance of <see cref="CandidateSolution"/> with the course from the blueprint included.</returns>
     public CandidateSolution Materialize()
     {
         if (addedCourse is null)
@@ -38,6 +62,11 @@ internal readonly struct CandidateBlueprint
             RarityScore);
     }
 
+    /// <summary>
+    /// Comparer that compares blueprints based on their rarity scores. If two blueprints
+    /// have the exact same rarity score and the same projected included courses mask they
+    /// are considered equal (they are permutations of eachother).
+    /// </summary>
     public class RarityComparer : IComparer<CandidateBlueprint>
     {
         public int Compare(CandidateBlueprint x, CandidateBlueprint y)
@@ -85,6 +114,11 @@ internal readonly struct CandidateBlueprint
         }
     }
 
+    /// <summary>
+    /// Used to resolve a tie when using the <see cref="RarityComparer"/>. This will prefer
+    /// the blueprint where the parent solution has the best rarity score (least remaining work).
+    /// If they are still equal the index of the first course added is used to resolve the tie.
+    /// </summary>
     public class TieBreakComparer : IComparer<CandidateBlueprint>
     {
         public int Compare(CandidateBlueprint x, CandidateBlueprint y)
