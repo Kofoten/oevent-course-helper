@@ -4,7 +4,7 @@ using OEventCourseHelper.Commands.CoursePrioritizer.IO;
 
 namespace OEventCourseHelper.Tests.CoursePrioritizer;
 
-public class CourseFilterTests
+public class CourseBuilderFilterTests
 {
     [Fact]
     public void Matches_SouldMatchCourse()

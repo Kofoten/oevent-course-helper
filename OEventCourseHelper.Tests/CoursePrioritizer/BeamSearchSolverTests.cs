@@ -13,10 +13,10 @@ public class BeamSearchSolverTests
         // Setup
         var courses = new Course[]
         {
-            new(0, "Dominated", new([5UL]), 2), // Mask 101000
-            new(1, "Longest", new([21Ul]), 3),  // Mask 101010
-            new(2, "Control", new([18Ul]), 2),  // Mask 010010
-            new(3, "Rarest", new([40UL]), 2),   // Mask 000101
+            new(0, "Dominated", new([0b000101UL]), 2),
+            new(1, "Longest", new([0b010101UL]), 3),
+            new(2, "Control", new([0b010010UL]), 2),
+            new(3, "Rarest", new([0b101000UL]), 2),
         };
 
         var dataSet = new EventDataSet(6, ImmutableCollectionsMarshal.AsImmutableArray(courses));
@@ -41,8 +41,8 @@ public class BeamSearchSolverTests
         // Setup
         var courses = new Course[]
         {
-            new(0, "A", new([3UL]), 2),
-            new(1, "B", new([3Ul]), 2),
+            new(0, "A", new([0b11UL]), 2),
+            new(1, "B", new([0b11Ul]), 2),
         };
 
         var dataSet = new EventDataSet(2, ImmutableCollectionsMarshal.AsImmutableArray(courses));

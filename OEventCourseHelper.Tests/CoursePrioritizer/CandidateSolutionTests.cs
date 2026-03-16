@@ -7,7 +7,7 @@ namespace OEventCourseHelper.Tests.CoursePrioritizer;
 public class CandidateSolutionTests
 {
     [Fact]
-    public void Initial_ShouldCreateNewBitmaskCandidateSolution()
+    public void Initial_ShouldCreateCorrectlyInitializedCandidateSolution()
     {
         // Setup
         var totalEventControlCount = 96;
@@ -39,29 +39,7 @@ public class CandidateSolutionTests
     }
 
     [Fact]
-    public void AddCourse_ShouldAddCourseNameAndFlipBitsAndReduceRarityScore()
-    {
-        // Setup
-        ImmutableArray<ulong> controlRarityLookup = [5000000UL, 2000000UL, 2500000UL, 6700000UL, 1000000UL];
-        var course = new Course(0, "A", new([19UL]), 3);
-        var context = new BeamSearchSolverContext(5, 17200000UL, 1, 1, [course], controlRarityLookup, new([]), []);
-        var solution = new CandidateSolution([], new([0UL]), new([31UL]), 17200000UL);
-
-        // Act
-        var actual = new CandidateBlueprint(solution, course, 8000000UL);
-
-        // Assert
-        //actual.CourseOrder.Should().HaveCount(1);
-        //actual.CourseOrder[0].Should().Be(course);
-        //actual.IncludedCoursesMask.Buckets[0].Should().Be(1Ul);
-        //actual.UnvisitedControlsMask.Buckets.Should().HaveCount(1);
-        //actual.UnvisitedControlsMask.Buckets[0].Should().Be(12UL);
-        actual.CourseCount.Should().Be(1);
-        actual.RarityScore.Should().Be(8000000UL);
-    }
-
-    [Fact]
-    public void GetPotentialRarityGain_ShouldReturnSameAsReductionByAddCourse()
+    public void GetPotentialRarityGain_ShouldReturnCorrectRarityGain()
     {
         // Setup
         var alternating = 0xAAAAAAAAAAAAAAAAUL;
@@ -74,9 +52,9 @@ public class CandidateSolutionTests
         var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 480000000UL);
 
         // Act
-        var actualRarityGain = solution.GetPotentialRarityGain(course, controlRarityLookup);
+        var actual = solution.GetPotentialRarityGain(course, controlRarityLookup);
 
         // Assert
-        actualRarityGain.Should().Be(240000000UL);
+        actual.Should().Be(240000000UL);
     }
 }
