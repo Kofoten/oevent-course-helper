@@ -1,5 +1,6 @@
 ﻿using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Xml;
+using System.Collections.Immutable;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -8,45 +9,114 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.IO;
 /// <summary>
 /// Reads the courses from a IOF 3.0 Xml file and counts the total number of used controls.
 /// </summary>
-internal class EventDataSetNodeReader(CourseBuilderFilter Filter) : IXmlNodeReader
+internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
 {
+    private const string Namespace = "http://www.orienteering.org/datastandard/3.0";
+
+    private const string ControlElementName = "Control";
+    private const string ControlElementSchemaType = "???";
     private const string CourseElementName = "Course";
     private const string CourseElementSchemaType = "Course";
 
-    private static readonly XmlSerializer courseSerializer = new(typeof(IOF.Xml.Course),
-        new XmlRootAttribute(CourseElementName)
+    private static readonly XmlSerializer controlSerializer = new(
+        typeof(IOF.Xml.Control),
+        new XmlRootAttribute(ControlElementName)
         {
-            Namespace = "http://www.orienteering.org/datastandard/3.0"
+            Namespace = Namespace,
         });
 
-    private int currentIndex = 0;
-    private readonly List<Course.Builder> courseBuilderAccumulator = [];
+    private static readonly XmlSerializer courseSerializer = new(
+        typeof(IOF.Xml.Course),
+        new XmlRootAttribute(CourseElementName)
+        {
+            Namespace = Namespace
+        });
+
+    private ReaderState state = ReaderState.ReadControls;
     private readonly Dictionary<string, int> controlIndexer = [];
+    private readonly List<Course> courseAccumulator = [];
 
     /// <summary>
     /// Finalizes and returns the currently read data as an <see cref="EventDataSet"/>.
     /// </summary>
     /// <returns>An instance of <see cref="EventDataSet"/></returns>
     public EventDataSet GetEventDataSet()
-        => EventDataSet.Create(currentIndex, courseBuilderAccumulator);
+    {
+        var finalizedCourses = courseAccumulator
+            .OrderBy(c => c.ControlMask, BitMask.Comparer.Instance)
+            .ThenBy(c => c.CourseName, StringComparer.Ordinal)
+            .Select((c, i) => c with
+            {
+                CourseIndex = i
+            })
+            .ToImmutableArray();
+
+        return new EventDataSet(controlIndexer.Count, finalizedCourses);
+    }
 
     /// <inheritdoc/>
     public bool CanRead(XmlReader reader)
     {
-        return reader.NodeType == XmlNodeType.Element
-            && reader.LocalName == CourseElementName
-            && reader.SchemaInfo?.SchemaType?.Name == CourseElementSchemaType;
+        if (reader.NodeType != XmlNodeType.Element)
+        {
+            return false;
+        }
+
+        return reader.LocalName switch
+        {
+            ControlElementName => reader.SchemaInfo?.SchemaType?.Name == ControlElementSchemaType,
+            CourseElementName => reader.SchemaInfo?.SchemaType?.Name == CourseElementSchemaType,
+            _ => false
+        };
     }
 
     /// <inheritdoc/>
     public void Read(XmlReader reader)
+    {
+        switch (reader.LocalName)
+        {
+            case ControlElementName when state is ReaderState.ReadControls:
+                ReadControl(reader);
+                break;
+            case CourseElementName when state is ReaderState.ReadControls:
+                state = ReaderState.ReadCourses;
+                SetCanonicalControlIndicies();
+                ReadCourse(reader);
+                break;
+            case CourseElementName when state is ReaderState.ReadCourses:
+                ReadCourse(reader);
+                break;
+            default:
+                // Bad data: be mad...
+                return;
+        }
+    }
+
+    private void ReadControl(XmlReader reader)
+    {
+        using var subReader = reader.ReadSubtree();
+        var deserializedObject = controlSerializer.Deserialize(subReader);
+
+        if (deserializedObject is IOF.Xml.Control iofControl)
+        {
+            if (iofControl.type != IOF.Xml.ControlType.Control)
+            {
+                return;
+            }
+
+            controlIndexer.TryAdd(iofControl.Id.Value, -1);
+        }
+    }
+
+    private void ReadCourse(XmlReader reader)
     {
         using var subReader = reader.ReadSubtree();
         var deserializedObject = courseSerializer.Deserialize(subReader);
 
         if (deserializedObject is IOF.Xml.Course iofCourse)
         {
-            var builder = new Course.Builder(iofCourse.Name);
+            var controlCount = 0;
+            var builder = new BitMask.Builder(BitMask.GetBucketCount(controlIndexer.Count));
             foreach (var courseControl in iofCourse.CourseControl)
             {
                 if (courseControl.type != IOF.Xml.ControlType.Control)
@@ -63,21 +133,41 @@ internal class EventDataSetNodeReader(CourseBuilderFilter Filter) : IXmlNodeRead
                 {
                     if (!controlIndexer.TryGetValue(controlCode, out var index))
                     {
-                        index = currentIndex++;
-                        controlIndexer[controlCode] = index;
+                        // TODO: sad parser, Why control not in XML??!!??!
+                        return;
                     }
 
-                    if (builder.ControlMaskBuilder.Set(index))
+                    if (builder.Set(index))
                     {
-                        builder.ControlCount++;
+                        controlCount++;
                     }
                 }
             }
 
-            if (Filter.Matches(builder))
+            var course = new Course(-1, iofCourse.Name, builder.ToBitMask(), controlCount);
+            if (Filter.Matches(course))
             {
-                courseBuilderAccumulator.Add(builder);
+                courseAccumulator.Add(course);
             }
         }
+    }
+
+    private void SetCanonicalControlIndicies()
+    {
+        var sortedKeys = controlIndexer.Keys
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+
+        for (int i = 0; i < sortedKeys.Count; i++)
+        {
+            controlIndexer[sortedKeys[i]] = i;
+        }
+    }
+
+    private enum ReaderState
+    {
+        Undefined = 0,
+        ReadControls,
+        ReadCourses,
     }
 }

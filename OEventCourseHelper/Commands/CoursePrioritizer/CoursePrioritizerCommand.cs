@@ -29,7 +29,7 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
-        var filter = new CourseBuilderFilter(true, [.. settings.Filters]);
+        var filter = new CourseFilter(true, [.. settings.Filters]);
         var dataSetReader = new EventDataSetNodeReader(filter);
         var iofReader = IOFXmlReader.Create();
         if (!iofReader.TryStream(settings.IofXmlFilePath, dataSetReader, out var errors))
