@@ -492,6 +492,29 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         public BitMaskEnumerator GetEnumerator() => new(buckets);
     }
     #endregion
+
+    #region Comparer
+    public class Comparer : IComparer<BitMask>
+    {
+        public static readonly Comparer Instance = new();
+
+        public int Compare(BitMask x, BitMask y)
+        {
+            int len = Math.Max(x.Buckets.Length, y.Buckets.Length);
+            for (int i = len - 1; i >= 0; i--)
+            {
+                var xBucket = i < x.Buckets.Length ? x.Buckets[i] : 0UL;
+                var yBucket = i < y.Buckets.Length ? y.Buckets[i] : 0UL;
+                if (xBucket != yBucket)
+                {
+                    return xBucket.CompareTo(yBucket);
+                }
+            }
+
+            return 0;
+        }
+    }
+    #endregion
 }
 
 /// <summary>

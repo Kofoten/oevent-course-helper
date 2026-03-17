@@ -8,16 +8,23 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
     /// <summary>
     /// Builder for <see cref="Course"/>.
     /// </summary>
-    internal class Builder()
+    internal class Builder(string courseName)
     {
-        public string CourseName { get; set; } = "Unknown Course";
-        public BitMask.Builder ControlMaskBuilder { get; set; } = new();
-        public int ControlCount { get; set; } = 0;
+        private readonly BitMask.Builder controlMaskBuilder = new();
 
-        public Builder(string courseName)
-            : this()
+        public string CourseName { get; private init; } = courseName;
+        public int ControlCount { get; private set; } = 0;
+        public uint CourseHash { get; private set; } = 0;
+
+        public bool IsEmpty => controlMaskBuilder.IsZero;
+
+        public void AddControl(int controlIndex, string controlCode)
         {
-            CourseName = courseName;
+            if (controlMaskBuilder.Set(controlIndex))
+            {
+                ControlCount++;
+                CourseHash ^= Crc32.Hash(controlCode);
+            }
         }
 
         /// <summary>
@@ -30,7 +37,7 @@ internal record Course(int CourseIndex, string CourseName, BitMask ControlMask, 
             return new Course(
                 courseIndex,
                 CourseName,
-                ControlMaskBuilder.ToBitMask(bucketCount),
+                controlMaskBuilder.ToBitMask(bucketCount),
                 ControlCount);
         }
     }
