@@ -409,10 +409,28 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     /// <summary>
     /// A mutable workspace to perform allocation free optimized bitwise operations on a <see cref="BitMask"/>.
     /// </summary>
-    /// <param name="bucketCount">The number of buckets in the <see cref="Workspace"/>.</param>
-    public readonly ref struct Workspace(int bucketCount)
+    public readonly ref struct Workspace
     {
-        private readonly ulong[] buckets = new ulong[bucketCount];
+        private readonly ulong[] buckets;
+
+        /// <summary>
+        /// Creates a <see cref="Workspace"/> of a specified length with all bits set to zero.
+        /// </summary>
+        /// <param name="bucketCount">The number of buckets in the <see cref="Workspace"/>.</param>
+        public Workspace(int bucketCount)
+        {
+            buckets = new ulong[bucketCount];
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Workspace"/> from a <see cref="BitMask"/>.
+        /// </summary>
+        /// <param name="mask">The <see cref="BitMask"/> to initialize the workspace with.</param>
+        public Workspace(BitMask mask)
+        {
+            buckets = new ulong[mask.BucketCount];
+            mask.Buckets.CopyTo(buckets);
+        }
 
         /// <summary>
         /// Performs the AND operation on the bucket at <paramref name="bucketIndex"/> in the
