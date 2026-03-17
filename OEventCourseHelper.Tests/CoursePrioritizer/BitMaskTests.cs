@@ -74,14 +74,14 @@ public class BitMaskTests
     }
 
     [Fact]
-    public void Set_ShouldThrowArgumentOutOfRangeException()
+    public void Set_ShouldThrowIndexOutOfRangeException()
     {
         // Setup
         var mask = new BitMask([0b0UL, 0b0UL]);
 
         // Act and Assert
         mask.Invoking(x => x.Set(512))
-            .Should().Throw<ArgumentOutOfRangeException>();
+            .Should().Throw<IndexOutOfRangeException>();
     }
 
     [Fact]

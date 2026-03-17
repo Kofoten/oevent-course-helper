@@ -48,7 +48,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     /// </summary>
     /// <param name="bitIndex">The index of the bit to set.</param>
     /// <returns>A new <see cref="BitMask"/>.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">If <paramref name="bitIndex"/> is outside the bounds of the <see cref="BitMask">.</exception>
+    /// <exception cref="IndexOutOfRangeException">If <paramref name="bitIndex"/> is outside the bounds of the <see cref="BitMask"/>.</exception>
     public BitMask Set(int bitIndex)
     {
         var bucketIndex = BitOps.GetBucketIndex(bitIndex);
@@ -421,7 +421,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="bucketIndex">The index of the buckets.</param>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
         public void AndBucketAt(int bucketIndex, BitMask other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndBucketAt));
@@ -435,7 +435,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="bucketIndex">The index of the buckets.</param>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
         public void AndNotBucketAt(int bucketIndex, BitMask other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndNotBucketAt));
@@ -449,7 +449,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="bucketIndex">The index of the buckets.</param>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
         public void OrBucketAt(int bucketIndex, BitMask other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(OrBucketAt));
