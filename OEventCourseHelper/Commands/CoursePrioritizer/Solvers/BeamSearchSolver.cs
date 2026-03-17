@@ -64,7 +64,7 @@ internal class BeamSearchSolver(int BeamWidth)
             {
                 if (candidate.IsComplete)
                 {
-                    beamBuilder.Insert(new CandidateBlueprint(candidate));
+                    beamBuilder.InsertOrDiscard(new CandidateBlueprint(candidate));
                     continue;
                 }
 
@@ -96,7 +96,7 @@ internal class BeamSearchSolver(int BeamWidth)
                     }
 
                     var blueprint = new CandidateBlueprint(candidate, course, projectedScore);
-                    beamBuilder.Insert(blueprint);
+                    beamBuilder.InsertOrDiscard(blueprint);
                 }
 
                 validCoursesMaskWorkspace.Clear();
@@ -239,11 +239,12 @@ internal class BeamSearchSolver(int BeamWidth)
 
     /// <summary>
     /// A custom priority queue which limits the amount of items to <paramref name="BeamWidth"/> and
-    /// ensures only the best <see cref="T"> are kept by using <paramref name="comparer"/>.
+    /// ensures only the best <typeparamref name="T"/> are kept by using <paramref name="comparer"/>.
     /// </summary>
     /// <typeparam name="T">The item type.</typeparam>
     /// <param name="BeamWidth">The maximum width of the beam.</param>
     /// <param name="comparer">The comparere to use.</param>
+    /// <param name="tieBreaker">The comparer used to resolve tie breaks.</param>
     private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer, IComparer<T>? tieBreaker = null)
     {
         private readonly List<T> beam = new(BeamWidth);
@@ -257,7 +258,7 @@ internal class BeamSearchSolver(int BeamWidth)
         /// </summary>
         /// <param name="item">The item to insert.</param>
         /// <returns>True if the item was keept; otherwise False.</returns>
-        public bool Insert(T item)
+        public bool InsertOrDiscard(T item)
         {
             int index = beam.BinarySearch(item, comparer);
             if (index >= 0)
