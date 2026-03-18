@@ -29,7 +29,7 @@ internal record CandidateSolution(
     /// <returns>A new instance of <see cref="CandidateSolution"/>.</returns>
     public static CandidateSolution Initial(BeamSearchSolverContext context)
     {
-        var unvisitedControlMask = BitMask.Fill(context.TotalEventControlCount);
+        var unvisitedControlMask = new BitMask(context.TargetControlsMask.Buckets);
         var includedCoursesMask = BitMask.Zero(context.CourseMaskBucketCount);
         return new([], includedCoursesMask, unvisitedControlMask, context.TotalControlRaritySum);
     }
