@@ -19,7 +19,7 @@ public class BeamSearchSolverTests
             new(3, "Rarest", new([0b101000UL]), 2),
         };
 
-        var dataSet = new EventDataSet(6, ImmutableCollectionsMarshal.AsImmutableArray(courses));
+        var dataSet = new EventDataSet(["31", "32", "33", "34", "35", "36"], ImmutableCollectionsMarshal.AsImmutableArray(courses));
 
         var solver = new BeamSearchSolver(3);
 
@@ -45,7 +45,7 @@ public class BeamSearchSolverTests
             new(1, "B", new([0b11Ul]), 2),
         };
 
-        var dataSet = new EventDataSet(2, ImmutableCollectionsMarshal.AsImmutableArray(courses));
+        var dataSet = new EventDataSet(["31", "32"], ImmutableCollectionsMarshal.AsImmutableArray(courses));
 
         var solver = new BeamSearchSolver(1);
 

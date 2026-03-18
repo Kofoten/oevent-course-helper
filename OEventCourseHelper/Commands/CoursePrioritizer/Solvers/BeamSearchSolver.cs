@@ -124,6 +124,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>A new instance of <see cref="BeamSearchSolverContext"/>.</returns>
     public static BeamSearchSolverContext CreateContext(EventDataSet dataSet)
     {
+        var controlMaskBucketCount = BitMask.GetBucketCount(dataSet.Controls.Length);
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
         var controlFrequencies = new ulong[dataSet.Controls.Length];
         var courseInvertedIndex = new BitMask.Builder[dataSet.Controls.Length];
@@ -143,6 +144,7 @@ internal class BeamSearchSolver(int BeamWidth)
         }
 
         var totalControlRaritySum = 0UL;
+        var targetControlsMaskBuilder = new BitMask.Builder(controlMaskBucketCount);
         var controlRarityLookup = new ulong[dataSet.Controls.Length];
         var immutableCourseInvertedIndicies = new BitMask[dataSet.Controls.Length];
         for (int i = 0; i < dataSet.Controls.Length; i++)
@@ -153,6 +155,7 @@ internal class BeamSearchSolver(int BeamWidth)
             }
             else
             {
+                targetControlsMaskBuilder.Set(i);
                 controlRarityLookup[i] = MaximumRarity / controlFrequencies[i];
                 totalControlRaritySum += controlRarityLookup[i];
             }
@@ -177,6 +180,7 @@ internal class BeamSearchSolver(int BeamWidth)
         }
 
         return new BeamSearchSolverContext(
+            targetControlsMaskBuilder.ToBitMask(),
             totalControlRaritySum,
             BitMask.GetBucketCount(dataSet.Controls.Length),
             courseMaskBucketCount,

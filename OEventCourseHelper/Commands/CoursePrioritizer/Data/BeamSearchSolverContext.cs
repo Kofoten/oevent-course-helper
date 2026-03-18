@@ -14,6 +14,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer.Data;
 /// <param name="DominatedCoursesMask">A <see cref="BitMask"/> covering the indicies of all dominated courses.</param>
 /// <param name="CourseInvertedIndex">An inverted index containg a <see cref="BitMask"/> containing the indicies of each course covering a specific control.</param>
 internal record BeamSearchSolverContext(
+    BitMask TargetControlsMask,
     ulong TotalControlRaritySum,
     int ControlMaskBucketCount,
     int CourseMaskBucketCount,

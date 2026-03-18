@@ -16,7 +16,7 @@ public class CandidateSolutionTests
             .ToImmutableArray();
 
         var context = new BeamSearchSolverContext(
-            totalEventControlCount,
+            BitMask.Fill(totalEventControlCount),
             controlRarityLookup.Aggregate(0UL, (acc, x) => acc + x),
             2,
             1,
