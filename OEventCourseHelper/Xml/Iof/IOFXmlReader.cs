@@ -35,6 +35,7 @@ internal sealed class IOFXmlReader
         }
 
         var validationMessages = new List<string>();
+        xmlNodeReader.OnValidationError = validationMessages.Add;
         using var reader = CreateInnerXmlReader(iofXmlPath, validationMessages);
 
         while (reader.Read())

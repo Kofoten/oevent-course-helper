@@ -102,6 +102,11 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     /// <returns>A new <see cref="BitMask"/>.</returns>
     public static BitMask Fill(int bitCount)
     {
+        if (bitCount <= 0)
+        {
+            return new BitMask([]);
+        }
+
         var bucketCount = BitOps.GetBucketCount(bitCount);
         var mask = new ulong[bucketCount];
 

@@ -8,6 +8,11 @@ namespace OEventCourseHelper.Xml;
 internal interface IXmlNodeReader
 {
     /// <summary>
+    /// A callback that can be used by the reader to inject a handler that receives custom validation errors.
+    /// </summary>
+    Action<string>? OnValidationError { get; set; }
+
+    /// <summary>
     /// Used to indicate if the current state of the inner <paramref name="reader"> can be read.
     /// </summary>
     /// <param name="reader">The <see cref="XmlReader"/></param>

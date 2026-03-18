@@ -125,8 +125,8 @@ internal class BeamSearchSolver(int BeamWidth)
     public static BeamSearchSolverContext CreateContext(EventDataSet dataSet)
     {
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
-        var controlFrequencies = new ulong[dataSet.TotalEventControlCount];
-        var courseInvertedIndex = new BitMask.Builder[dataSet.TotalEventControlCount];
+        var controlFrequencies = new ulong[dataSet.Controls.Length];
+        var courseInvertedIndex = new BitMask.Builder[dataSet.Controls.Length];
         foreach (var course in dataSet.Courses)
         {
             foreach (var controlIndex in course.ControlMask)
@@ -143,9 +143,9 @@ internal class BeamSearchSolver(int BeamWidth)
         }
 
         var totalControlRaritySum = 0UL;
-        var controlRarityLookup = new ulong[dataSet.TotalEventControlCount];
-        var immutableCourseInvertedIndicies = new BitMask[dataSet.TotalEventControlCount];
-        for (int i = 0; i < dataSet.TotalEventControlCount; i++)
+        var controlRarityLookup = new ulong[dataSet.Controls.Length];
+        var immutableCourseInvertedIndicies = new BitMask[dataSet.Controls.Length];
+        for (int i = 0; i < dataSet.Controls.Length; i++)
         {
             if (controlFrequencies[i] == 0)
             {
@@ -157,7 +157,14 @@ internal class BeamSearchSolver(int BeamWidth)
                 totalControlRaritySum += controlRarityLookup[i];
             }
 
-            immutableCourseInvertedIndicies[i] = courseInvertedIndex[i].ToBitMask();
+            if (courseInvertedIndex[i] is null)
+            {
+                immutableCourseInvertedIndicies[i] = new BitMask.Builder(courseMaskBucketCount).ToBitMask();
+            }
+            else
+            {
+                immutableCourseInvertedIndicies[i] = courseInvertedIndex[i].ToBitMask();
+            }
         }
 
         var dominatedCoursesMaskBuilder = new BitMask.Builder(courseMaskBucketCount);
@@ -170,9 +177,8 @@ internal class BeamSearchSolver(int BeamWidth)
         }
 
         return new BeamSearchSolverContext(
-            dataSet.TotalEventControlCount,
             totalControlRaritySum,
-            BitMask.GetBucketCount(dataSet.TotalEventControlCount),
+            BitMask.GetBucketCount(dataSet.Controls.Length),
             courseMaskBucketCount,
             dataSet.Courses,
             ImmutableCollectionsMarshal.AsImmutableArray(controlRarityLookup),

@@ -1,5 +1,6 @@
 ﻿using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Xml;
+using Spectre.Console;
 using System.Collections.Immutable;
 using System.Xml;
 using System.Xml.Serialization;
@@ -14,7 +15,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     private const string Namespace = "http://www.orienteering.org/datastandard/3.0";
 
     private const string ControlElementName = "Control";
-    private const string ControlElementSchemaType = "???";
+    private const string ControlElementSchemaType = "Control";
     private const string CourseElementName = "Course";
     private const string CourseElementSchemaType = "Course";
 
@@ -36,6 +37,8 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     private readonly Dictionary<string, int> controlIndexer = [];
     private readonly List<Course> courseAccumulator = [];
 
+    public Action<string>? OnValidationError { get; set; }
+
     /// <summary>
     /// Finalizes and returns the currently read data as an <see cref="EventDataSet"/>.
     /// </summary>
@@ -51,7 +54,12 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
             })
             .ToImmutableArray();
 
-        return new EventDataSet(controlIndexer.Count, finalizedCourses);
+        var finalizedControls = controlIndexer
+            .OrderBy(c => c.Value)
+            .Select(c => c.Key)
+            .ToImmutableArray();
+
+        return new EventDataSet(finalizedControls, finalizedCourses);
     }
 
     /// <inheritdoc/>
@@ -87,7 +95,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
                 ReadCourse(reader);
                 break;
             default:
-                // Bad data: be mad...
+                OnValidationError?.Invoke($"Validation Error: Element '{reader.LocalName}' encountered out of order.");
                 return;
         }
     }
@@ -133,7 +141,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
                 {
                     if (!controlIndexer.TryGetValue(controlCode, out var index))
                     {
-                        // TODO: sad parser, Why control not in XML??!!??!
+                        OnValidationError?.Invoke($"Validation Error: Course '{iofCourse.Name}' references undefined control '{controlCode}'.");
                         return;
                     }
 
