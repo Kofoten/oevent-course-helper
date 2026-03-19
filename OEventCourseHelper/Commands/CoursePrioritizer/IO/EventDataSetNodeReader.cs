@@ -46,7 +46,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     public EventDataSet GetEventDataSet()
     {
         var finalizedCourses = courseAccumulator
-            .OrderBy(c => c.ControlMask, BitMask.Comparer.Instance)
+            .OrderBy(c => c.ControlMask, BitMask.NumericComparer.Instance)
             .ThenBy(c => c.CourseName, StringComparer.Ordinal)
             .Select((c, i) => c with
             {
