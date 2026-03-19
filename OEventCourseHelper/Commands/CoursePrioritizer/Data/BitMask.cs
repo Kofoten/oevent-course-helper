@@ -499,9 +499,15 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     #endregion
 
     #region Comparer
-    public class Comparer : IComparer<BitMask>
+    /// <summary>
+    /// Compares two <see cref="BitMask"/> objects treating them as a large unsigned integer.
+    /// </summary>
+    /// <remarks>
+    /// When comparing <see cref="BitMask"/> objects of different lengths, missing buckets are treated as zero.
+    /// </remarks>
+    public class NumericComparer : IComparer<BitMask>
     {
-        public static readonly Comparer Instance = new();
+        public static readonly NumericComparer Instance = new();
 
         public int Compare(BitMask x, BitMask y)
         {
