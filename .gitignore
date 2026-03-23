@@ -27,3 +27,6 @@ bld/
 *.pdb
 *.ipdb
 *.data
+
+## Generated files
+**/ThirdPartyNotices.txt

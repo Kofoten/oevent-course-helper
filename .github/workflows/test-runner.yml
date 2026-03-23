@@ -17,6 +17,9 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore
 
+      - name: Validate licenses
+        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj -- ./OEventCourseHelper/obj/project.assets.json ./ThirdPartyNotices.txt ./Licenses
+
       - name: Build
         run: dotnet build --no-restore
 
