@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
-internal class BeamSearchSolver(int BeamWidth)
+internal class BeamSearchSolver(int BeamWidth, bool Strict)
 {
     public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
 
@@ -17,31 +17,64 @@ internal class BeamSearchSolver(int BeamWidth)
     /// Uses a beam search to priotitize the courses in <paramref name="dataSet"/> and marking the courses
     /// that are required in order to visit all controls in the orienteering event.
     /// </summary>
+    /// <remarks>
+    /// <b>Data Contract:</b> For deterministic tie-breaking, the <paramref name="dataSet"/> must provide:
+    /// <list type="bullet">
+    /// <item>Courses sorted by <see cref="Course.ControlMask"/>, then alphabetically.</item>
+    /// <item><see cref="Course.CourseIndex"/> matching the physical array index exactly.</item>
+    /// </list>
+    /// </remarks>
     /// <param name="dataSet">The data set to try and compute a solution for.</param>
-    /// <param name="solution">The computed solution.</param>
     /// <returns>True if a solution could be found; otherwise False</returns>
-    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out PriorityResult[]? solution)
+    public SolveResult Solve(EventDataSet dataSet)
     {
         var context = CreateContext(dataSet);
+        var orphanedControlsMask = BitMask.Fill(dataSet.Controls.Length)
+            .AndNot(context.TargetControlsMask);
+
+        var orphanedControlIds = new List<string>();
+        if (!orphanedControlsMask.IsZero)
+        {
+            foreach (var orphanedControlIndex in orphanedControlsMask)
+            {
+                orphanedControlIds.Add(dataSet.Controls[orphanedControlIndex]);
+            }
+
+            if (Strict)
+            {
+                return new()
+                {
+                    Status = SolveStatus.StrictModeValidationFailed,
+                    OrphanedControls = orphanedControlIds,
+                };
+            }
+        }
+
         var requiredCoursesResult = PerformBeamSearch(context);
         if (requiredCoursesResult is null)
         {
-            solution = null;
-            return false;
+            return new()
+            {
+                Status = SolveStatus.NoSolutionFound,
+                OrphanedControls = orphanedControlIds,
+            };
         }
 
-        solution = [
-            .. requiredCoursesResult.Order
-                .Select(x => new PriorityResult(x.CourseName, true)),
-            .. context.Courses
-                .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
-                .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
-                .ThenByDescending(x => x.ControlCount)
-                .ThenBy(x => x.CourseName)
-                .Select(x => new PriorityResult(x.CourseName, false)),
-        ];
-
-        return true;
+        return new()
+        {
+            Status = SolveStatus.Success,
+            Solution = [
+                .. requiredCoursesResult.Order
+                    .Select(x => new ResultItem(x.CourseName, true)),
+                .. context.Courses
+                    .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
+                    .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
+                    .ThenByDescending(x => x.ControlCount)
+                    .ThenBy(x => x.CourseName)
+                    .Select(x => new ResultItem(x.CourseName, false)),
+            ],
+            OrphanedControls = orphanedControlIds,
+        };
     }
 
     /// <summary>
@@ -84,7 +117,7 @@ internal class BeamSearchSolver(int BeamWidth)
                     var course = context.Courses[courseIndex];
 
                     var rarityGain = candidate.GetPotentialRarityGain(course, context.ControlRarityLookup);
-                    if (rarityGain <= 0.0F)
+                    if (rarityGain == 0UL)
                     {
                         continue;
                     }
@@ -198,7 +231,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
     private static bool IsDominated(Course course, ImmutableArray<Course> courses, ReadOnlySpan<ulong> controlRarityLookup)
     {
-        var rarestValue = -1.0F;
+        var rarestValue = 0UL;
         var indexOfRarest = -1;
         foreach (var controlIndex in course.ControlMask)
         {
@@ -238,7 +271,7 @@ internal class BeamSearchSolver(int BeamWidth)
 
             if (!course.ControlMask.Equals(other.ControlMask)
                 ||
-                string.CompareOrdinal(course.CourseName, other.CourseName) > 0)
+                course.CourseIndex > other.CourseIndex)
             {
                 return true;
             }
@@ -325,5 +358,24 @@ internal class BeamSearchSolver(int BeamWidth)
         }
     }
 
-    public record PriorityResult(string Name, bool IsRequired);
+    public record ResultItem(string CourseName, bool IsRequired);
+
+    public record SolveResult
+    {
+        public required SolveStatus Status { get; init; }
+
+        [MemberNotNullWhen(true, nameof(Solution))]
+        public bool IsSuccess => Status == SolveStatus.Success;
+
+        public ResultItem[]? Solution { get; init; }
+
+        public required IReadOnlyList<string> OrphanedControls { get; init; }
+    }
+
+    public enum SolveStatus
+    {
+        Success,
+        StrictModeValidationFailed,
+        NoSolutionFound
+    }
 }

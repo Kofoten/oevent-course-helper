@@ -13,4 +13,8 @@ internal class CoursePrioritizerSettings : IofXmlFileSettings
     [CommandOption("-f|--filter")]
     [Description("One or more strings to filter course names by. Only courses containing one of these strings will be included")]
     public string[] Filters { get; init; } = [];
+
+    [CommandOption("--strict")]
+    [Description("If set, the command will fail if any controls cannot be visited by the available courses. If not set the command will log a warning for each such control instead.")]
+    public bool Strict { get; init; }
 }
