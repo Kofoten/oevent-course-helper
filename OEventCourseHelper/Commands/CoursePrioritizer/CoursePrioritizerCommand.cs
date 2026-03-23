@@ -38,8 +38,18 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
             return ExitCode.FailedToLoadFile;
         }
 
-        var solver = new BeamSearchSolver(settings.BeamWidth);
+        var solver = new BeamSearchSolver(settings.BeamWidth, settings.Strict);
         var dataSet = dataSetReader.GetEventDataSet();
+        var result = solver.Solve(dataSet);
+        if (result.IsSuccess)
+        {
+            foreach (var course in result.Solution)
+            {
+                var suffix = course.IsRequired ? " (required)" : string.Empty;
+                Console.WriteLine($"{course.CourseName}{suffix}");
+            }
+        }
+
         if (!solver.TrySolve(dataSet, out var result))
         {
             logger.NoSolutionFound();
@@ -48,8 +58,7 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
         foreach (var course in result)
         {
-            var suffix = course.IsRequired ? " (required)" : string.Empty;
-            Console.WriteLine($"{course.Name}{suffix}");
+
         }
 
         return ExitCode.Success;
