@@ -58,7 +58,13 @@ jobs:
         run: dotnet restore -p:Version=${{ env.SEMVER }}
 
       - name: Generate ThirdPartyNotices
-        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj -p:Version=${{ env.SEMVER }} -- ./OEventCourseHelper/obj/project.assets.json ./ThirdPartyNotices.txt ./Licenses
+        run: |
+          dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj \
+          -p:Version=${{ env.SEMVER }} \
+          -- \
+          ./OEventCourseHelper/obj/project.assets.json \
+          ./ThirdPartyNotices.txt \
+          ./Licenses
 
       - name: Build
         run: dotnet build --no-restore -p:Version=${{ env.SEMVER }}
@@ -76,8 +82,8 @@ jobs:
             dotnet publish OEventCourseHelper/OEventCourseHelper.csproj \
               -c Release \
               -r $RID \
-              --self-contained true \
-              -p:PublishSingleFile=true \
+              --self-contained false \
+              -p:PublishSingleFile=false \
               -p:Version=${{ env.SEMVER }} \
               -o ./publish_$RID
 
