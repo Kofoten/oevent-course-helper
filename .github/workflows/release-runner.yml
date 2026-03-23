@@ -57,6 +57,9 @@ jobs:
       - name: Restore Dependencies
         run: dotnet restore -p:Version=${{ env.SEMVER }}
 
+      - name: Generate ThirdPartyNotices
+        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj -- ./OEventCourseHelper/obj/project.assets.json ./ThirdPartyNotices.txt ./Licenses
+
       - name: Build
         run: dotnet build --no-restore -p:Version=${{ env.SEMVER }}
 
@@ -77,6 +80,8 @@ jobs:
               -p:PublishSingleFile=true \
               -p:Version=${{ env.SEMVER }} \
               -o ./publish_$RID
+
+            cp ./ThirdPartyNotices.txt ./publish_$RID/
             
             zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
           done
