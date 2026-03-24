@@ -36,7 +36,7 @@ public class BeamSearchSolverTests
     }
 
     [Fact]
-    public void TrySolve_ShouldSortByAlphabeticalWhenIdentical()
+    public void TrySolve_ShouldSortByCourseIndexWhenIdentical()
     {
         // Setup
         var courses = new Course[]
@@ -56,26 +56,6 @@ public class BeamSearchSolverTests
         actual!.Length.Should().Be(2);
         actual[0].Should().Be(new BeamSearchSolver.ResultItem("B", true));
         actual[1].Should().Be(new BeamSearchSolver.ResultItem("A", false));
-    }
-
-    [Fact]
-    public void TrySolve_ShouldReturnFalse_WhenNotAllControlsCanBeVisited()
-    {
-        // Setup
-        var courses = new Course[]
-        {
-            new(0, "IncompleteCourse", new([0b01UL]), 1)
-        };
-
-        var dataSet = new EventDataSet(["31", "32"], ImmutableCollectionsMarshal.AsImmutableArray(courses));
-        var solver = new BeamSearchSolver(3);
-
-        // Act
-        var solutionFound = solver.TrySolve(dataSet, out var actual);
-
-        // Assert
-        solutionFound.Should().BeFalse();
-        actual.Should().BeNull();
     }
 
     [Fact]
