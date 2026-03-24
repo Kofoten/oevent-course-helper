@@ -1,0 +1,18 @@
+# Set the default behavior to automatically normalize line endings
+* text=auto
+
+# Force C# and .NET specific files to ALWAYS use CRLF line endings
+*.cs text eol=crlf
+*.vb text eol=crlf
+*.sln text eol=crlf
+*.csproj text eol=crlf
+*.json text eol=crlf
+*.config text eol=crlf
+*.xml text eol=crlf
+*.md text eol=crlf
+
+# Denote files that are truly binary and should not be modified by Git
+*.png binary
+*.jpg binary
+*.dll binary
+*.exe binary

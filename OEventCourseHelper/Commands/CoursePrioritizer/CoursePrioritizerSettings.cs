@@ -16,5 +16,5 @@ internal class CoursePrioritizerSettings : IofXmlFileSettings
 
     [CommandOption("--strict")]
     [Description("If set, the command will fail if any controls cannot be visited by the available courses. If not set the command will log a warning for each such control instead.")]
-    public bool Strict { get; init; }
+    public bool Strict { get; init; } = false;
 }
