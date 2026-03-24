@@ -88,6 +88,8 @@ jobs:
               -o ./publish_$RID
 
             cp ./ThirdPartyNotices.txt ./publish_$RID/
+            cp ./README.md ./publish_$RID/
+            cp ./LICENSE ./publish_$RID/LICENSE.txt
             
             zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
           done
