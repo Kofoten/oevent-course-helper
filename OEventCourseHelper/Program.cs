@@ -4,15 +4,12 @@ using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer;
 using Spectre.Console.Cli;
 
-using var loggerFactory = LoggerFactory.Create(builder =>
+var services = new ServiceCollection();
+services.AddLogging(builder =>
 {
     builder.AddConsole();
     builder.SetMinimumLevel(LogLevel.Information);
 });
-
-var services = new ServiceCollection();
-services.AddSingleton(loggerFactory);
-services.AddSingleton(typeof(ILogger<>), typeof(Logger<>));
 
 var registrar = new TypeRegistrar(services);
 var app = new CommandApp(registrar);
