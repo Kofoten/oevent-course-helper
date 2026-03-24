@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Commands.CoursePrioritizer.IO;
 using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 using OEventCourseHelper.Data;
@@ -38,18 +39,13 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
             return ExitCode.FailedToLoadFile;
         }
 
-        var solver = new BeamSearchSolver(settings.BeamWidth, settings.Strict);
         var dataSet = dataSetReader.GetEventDataSet();
-        var result = solver.Solve(dataSet);
-        if (result.IsSuccess)
+        if (!ValidateDataSet(dataSet, settings.Strict))
         {
-            foreach (var course in result.Solution)
-            {
-                var suffix = course.IsRequired ? " (required)" : string.Empty;
-                Console.WriteLine($"{course.CourseName}{suffix}");
-            }
+
         }
 
+        var solver = new BeamSearchSolver(settings.BeamWidth);
         if (!solver.TrySolve(dataSet, out var result))
         {
             logger.NoSolutionFound();
@@ -58,9 +54,38 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
         foreach (var course in result)
         {
-
+            var suffix = course.IsRequired ? " (required)" : string.Empty;
+            Console.WriteLine($"{course.CourseName}{suffix}");
         }
 
         return ExitCode.Success;
+    }
+
+    public bool ValidateDataSet(EventDataSet dataSet, bool strict)
+    {
+        var orphanedControlsMaskBuilder = BitMask.Builder.From(BitMask.Fill(dataSet.Controls.Length));
+        foreach (var course in dataSet.Courses)
+        {
+            orphanedControlsMaskBuilder.AndNot(course.ControlMask);
+        }
+
+        var orphanedControlsMask = orphanedControlsMaskBuilder.ToBitMask();
+        if (orphanedControlsMask.IsZero)
+        {
+            return true;
+        }
+
+        if (strict)
+        {
+            logger.StrictModeValidationFailed(orphanedControlsMask.PopCount);
+            return false;
+        }
+
+        foreach (var control in orphanedControlsMask)
+        {
+            logger.ControlSkippedWarning(dataSet.Controls[control]);
+        }
+
+        return true;
     }
 }

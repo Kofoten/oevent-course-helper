@@ -16,6 +16,7 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     {
         Buckets = buckets;
         IsZero = BitOps.IsZero(this);
+        PopCount = BitOps.PopCount(this);
     }
 
     /// <summary>
@@ -27,6 +28,11 @@ internal readonly record struct BitMask : IEquatable<BitMask>
     /// Indicates if all bits in the <see cref="BitMask"/> is set to zero.
     /// </summary>
     public bool IsZero { get; private init; }
+
+    /// <summary>
+    /// The population count of the <see cref="BitMask"/>.
+    /// </summary>
+    public int PopCount { get; private init; }
 
     public bool this[int bitIndex] => BitOps.IsSet(this, bitIndex);
 
@@ -317,6 +323,20 @@ internal readonly record struct BitMask : IEquatable<BitMask>
         }
 
         /// <summary>
+        /// Performs the OR operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
+        /// </summary>
+        /// <param name="other">The <see cref="BitMask"/> to use when performing the OR operation on the <see cref="Builder"/>.</param>
+        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
+        public void Or(BitMask other)
+        {
+            ReziseIfRequired(other.BucketCount);
+            for (int i = 0; i < other.BucketCount; i++)
+            {
+                BitOps.OrBucketAt(buckets, i, other);
+            }
+        }
+
+        /// <summary>
         /// Produces a <see cref="BitMask"/> from the <see cref="Builder"/>.
         /// </summary>
         /// <remarks>
@@ -566,6 +586,18 @@ file static class BitOps
         }
 
         return true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int PopCount(ReadOnlySpan<ulong> mask)
+    {
+        var count = 0;
+        foreach (var bucket in mask)
+        {
+            count += BitOperations.PopCount(bucket);
+        }
+
+        return count;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

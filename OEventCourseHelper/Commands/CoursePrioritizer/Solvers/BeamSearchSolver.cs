@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 
-internal class BeamSearchSolver(int BeamWidth, bool Strict)
+internal class BeamSearchSolver(int BeamWidth)
 {
     public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
 
@@ -25,56 +25,30 @@ internal class BeamSearchSolver(int BeamWidth, bool Strict)
     /// </list>
     /// </remarks>
     /// <param name="dataSet">The data set to try and compute a solution for.</param>
+    /// <param name="priority">The prioritized order of the courses where the required courses has the <see cref="ResultItem.IsRequired"/> property set to True.</param>
     /// <returns>True if a solution could be found; otherwise False</returns>
-    public SolveResult Solve(EventDataSet dataSet)
+    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out ResultItem[]? priority)
     {
         var context = CreateContext(dataSet);
-        var orphanedControlsMask = BitMask.Fill(dataSet.Controls.Length)
-            .AndNot(context.TargetControlsMask);
-
-        var orphanedControlIds = new List<string>();
-        if (!orphanedControlsMask.IsZero)
-        {
-            foreach (var orphanedControlIndex in orphanedControlsMask)
-            {
-                orphanedControlIds.Add(dataSet.Controls[orphanedControlIndex]);
-            }
-
-            if (Strict)
-            {
-                return new()
-                {
-                    Status = SolveStatus.StrictModeValidationFailed,
-                    OrphanedControls = orphanedControlIds,
-                };
-            }
-        }
-
         var requiredCoursesResult = PerformBeamSearch(context);
         if (requiredCoursesResult is null)
         {
-            return new()
-            {
-                Status = SolveStatus.NoSolutionFound,
-                OrphanedControls = orphanedControlIds,
-            };
+            priority = null;
+            return false;
         }
 
-        return new()
-        {
-            Status = SolveStatus.Success,
-            Solution = [
-                .. requiredCoursesResult.Order
-                    .Select(x => new ResultItem(x.CourseName, true)),
-                .. context.Courses
-                    .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
-                    .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
-                    .ThenByDescending(x => x.ControlCount)
-                    .ThenBy(x => x.CourseName)
-                    .Select(x => new ResultItem(x.CourseName, false)),
-            ],
-            OrphanedControls = orphanedControlIds,
-        };
+        priority = [
+            .. requiredCoursesResult.Order
+                .Select(x => new ResultItem(x.CourseName, true)),
+            .. context.Courses
+                .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
+                .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
+                .ThenByDescending(x => x.ControlCount)
+                .ThenBy(x => x.CourseName)
+                .Select(x => new ResultItem(x.CourseName, false)),
+        ];
+
+        return true;
     }
 
     /// <summary>
@@ -359,23 +333,4 @@ internal class BeamSearchSolver(int BeamWidth, bool Strict)
     }
 
     public record ResultItem(string CourseName, bool IsRequired);
-
-    public record SolveResult
-    {
-        public required SolveStatus Status { get; init; }
-
-        [MemberNotNullWhen(true, nameof(Solution))]
-        public bool IsSuccess => Status == SolveStatus.Success;
-
-        public ResultItem[]? Solution { get; init; }
-
-        public required IReadOnlyList<string> OrphanedControls { get; init; }
-    }
-
-    public enum SolveStatus
-    {
-        Success,
-        StrictModeValidationFailed,
-        NoSolutionFound
-    }
 }
