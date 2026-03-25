@@ -40,6 +40,9 @@ internal class OEventCourseHelperConsoleFormatter(IOptionsMonitor<OEventCourseHe
         ansiConsole.WriteLine(message);
     }
 
+    /// <summary>
+    /// Formats the log entry inte a machine readable format: LogLevel:EventId|EventName\tparam1="value1",param2="value2"
+    /// </summary>
     private static void WritePorcelain<TState>(in LogEntry<TState> logEntry, TextWriter textWriter)
     {
         textWriter.Write(logEntry.LogLevel switch
