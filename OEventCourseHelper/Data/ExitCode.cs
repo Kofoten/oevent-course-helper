@@ -9,4 +9,5 @@ internal static class ExitCode
     public const int FailedToParseArguments = 4;
     public const int FailedToLoadFile = 5;
     public const int NoSolutionFound = 6;
+    public const int ValidationFailed = 7;
 }

@@ -1,13 +1,22 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Console;
 using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer;
+using OEventCourseHelper.Logging;
 using Spectre.Console.Cli;
 
 var services = new ServiceCollection();
+
+services.Configure<OEventCourseHelperLoggingOptions>(_ => { });
+
 services.AddLogging(builder =>
 {
-    builder.AddConsole();
+    builder.AddConsoleFormatter<OEventCourseHelperConsoleFormatter, ConsoleFormatterOptions>();
+    builder.AddConsole(options =>
+    {
+        options.FormatterName = OEventCourseHelperConsoleFormatter.FormatterName;
+    });
     builder.SetMinimumLevel(LogLevel.Information);
 });
 
