@@ -1,9 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Commands.CoursePrioritizer.IO;
 using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
 using OEventCourseHelper.Data;
-using OEventCourseHelper.Extensions;
 using OEventCourseHelper.Logging;
 using OEventCourseHelper.Xml.Iof;
 using Spectre.Console;
@@ -11,7 +11,10 @@ using Spectre.Console.Cli;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer;
 
-internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger) : Command<CoursePrioritizerSettings>
+internal class CoursePrioritizerCommand(
+    ILogger<CoursePrioritizerCommand> logger,
+    IOptionsMonitor<OEventCourseHelperLoggingOptions> loggingOptions)
+    : Command<CoursePrioritizerSettings>
 {
     public override ValidationResult Validate(CommandContext context, CoursePrioritizerSettings settings)
     {
@@ -30,19 +33,29 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
 
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
+        if (settings.Porcelain)
+        {
+            loggingOptions.CurrentValue.LoggingMode = OEventCourseHelperLoggingMode.Porcelain;
+        }
+
         var filter = new CourseFilter(true, [.. settings.Filters]);
         var dataSetReader = new EventDataSetNodeReader(filter);
         var iofReader = IOFXmlReader.Create();
         if (!iofReader.TryStream(settings.IofXmlFilePath, dataSetReader, out var errors))
         {
-            logger.FailedToLoadFile(settings.IofXmlFilePath, errors.FormatErrors());
+            foreach (var error in errors)
+            {
+                logger.IofSchemaViolation(error);
+            }
+
+            logger.FailedToLoadFile(settings.IofXmlFilePath);
             return ExitCode.FailedToLoadFile;
         }
 
         var dataSet = dataSetReader.GetEventDataSet();
         if (!ValidateDataSet(dataSet, settings.Strict))
         {
-
+            return ExitCode.ValidationFailed;
         }
 
         var solver = new BeamSearchSolver(settings.BeamWidth);
@@ -52,10 +65,9 @@ internal class CoursePrioritizerCommand(ILogger<CoursePrioritizerCommand> logger
             return ExitCode.NoSolutionFound;
         }
 
-        foreach (var course in result)
+        for (int i = 0; i < result.Length; i++)
         {
-            var suffix = course.IsRequired ? " (required)" : string.Empty;
-            Console.WriteLine($"{course.CourseName}{suffix}");
+            logger.PriorityResult(i + 1, result[i].CourseName, result[i].IsRequired);
         }
 
         return ExitCode.Success;

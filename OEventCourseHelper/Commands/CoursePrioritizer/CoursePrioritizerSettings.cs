@@ -17,4 +17,8 @@ internal class CoursePrioritizerSettings : IofXmlFileSettings
     [CommandOption("--strict")]
     [Description("If set, the command will fail if any controls cannot be visited by the available courses. If not set the command will log a warning for each such control instead.")]
     public bool Strict { get; init; } = false;
+
+    [CommandOption("--porcelain")]
+    [Description("Machine-readable output.")]
+    public bool Porcelain { get; init; } = false;
 }

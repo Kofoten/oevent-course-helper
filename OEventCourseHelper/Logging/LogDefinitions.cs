@@ -5,8 +5,11 @@ namespace OEventCourseHelper.Logging;
 internal static partial class LogDefinitions
 {
     #region General (10000 - 10999)
-    [LoggerMessage(10000, LogLevel.Error, "Failed to load the file: {filePath}{formattedErrors}")]
-    public static partial void FailedToLoadFile(this ILogger logger, string filePath, string? formattedErrors);
+    [LoggerMessage(10000, LogLevel.Error, "Failed to load the file: {filePath}")]
+    public static partial void FailedToLoadFile(this ILogger logger, string filePath);
+
+    [LoggerMessage(10001, LogLevel.Error, "{message}")]
+    public static partial void IofSchemaViolation(this ILogger logger, string message);
     #endregion
 
     #region CoursePrioritizer (11000 - 11999)
@@ -18,5 +21,8 @@ internal static partial class LogDefinitions
 
     [LoggerMessage(11002, LogLevel.Error, "Strict mode is enabled and {count} control(s) cannot be visited. Aborting.")]
     public static partial void StrictModeValidationFailed(this ILogger logger, int count);
+
+    [LoggerMessage(11003, LogLevel.Information, "{priority}. {courseName} (required: {required})")]
+    public static partial void PriorityResult(this ILogger logger, int priority, string courseName, bool required);
     #endregion
 }
