@@ -27,7 +27,7 @@ internal static partial class LogDefinitions
     [LoggerMessage(11003, LogLevel.Information, "{priority}. {courseName} (required: {required})")]
     public static partial void PriorityResult(this ILogger logger, int priority, string courseName, bool required);
 
-    [LoggerMessage(11004, LogLevel.Information, "Evaluated a total of {courseCount} of wich {requiredCount} are required to visit {visitedControlCount} of {totalControlCount} total controls in the event.")]
+    [LoggerMessage(11004, LogLevel.Information, "Evaluated a total of {courseCount} courses where {requiredCount} are required to visit {visitedControlCount} of {totalControlCount} total controls in the event.")]
     public static partial void PrioritizeSummary(this ILogger logger, int courseCount, int requiredCount, int visitedControlCount, int totalControlCount);
     #endregion
 }
