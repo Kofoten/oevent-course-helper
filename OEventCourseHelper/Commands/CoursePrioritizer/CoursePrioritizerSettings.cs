@@ -6,7 +6,7 @@ namespace OEventCourseHelper.Commands.CoursePrioritizer;
 internal class CoursePrioritizerSettings : IofXmlFileSettings
 {
     [CommandOption("-w|--beam-width")]
-    [Description("Sets the width of the beam for the search")]
+    [Description("Sets the width of the beam for the search (must be a positive integer greater than zero).")]
     [DefaultValue(3)]
     public int BeamWidth { get; init; } = 3;
 
