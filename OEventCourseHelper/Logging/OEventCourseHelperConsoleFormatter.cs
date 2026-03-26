@@ -84,9 +84,28 @@ internal class OEventCourseHelperConsoleFormatter(IOptionsMonitor<OEventCourseHe
                     textWriter.Write(',');
                 }
 
+                textWriter.Write($"{name}=\"");
+
                 var rawValue = value?.ToString() ?? string.Empty;
-                var escapedValue = rawValue.Replace("\"", "\"\"");
-                textWriter.Write($"{name}=\"{escapedValue}\"");
+                for (int i = 0; i < rawValue.Length; i++)
+                {
+                    switch (rawValue[i])
+                    {
+                        case '\r':
+                            break;
+                        case '\n':
+                            textWriter.Write(' ');
+                            break;
+                        case '"':
+                            textWriter.Write("\"\"");
+                            break;
+                        default:
+                            textWriter.Write(rawValue[i]);
+                            break;
+                    }
+                }
+
+                textWriter.Write('"');
             }
         }
 

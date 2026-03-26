@@ -53,6 +53,9 @@ The tool uses structured logging with two distinct output formatters:
 
 - **Human-Readable (Spectre)**: The default mode, providing clean console output.
 - **Machine-Readable (Porcelain)**: Activated via the `--porcelain` flag, outputting strict, tab-separated log entries (e.g., `INF:11003|PriorityResult\tpriority="1",courseName="Course 1",required="True"`) designed to be easily parsed by automation scripts.
+  - **Sanitization**: To guarantee a single-line format, Carriage Returns (`\r`) are stripped and Newlines (`\n`) are replaced with a single space.
+  - **Escaping**: Internal double quotes are escaped as `""` per RFC 4180.
+  - **Consistency**: Values are always enclosed in double quotes to ensure reliable parsing.
 
 ## 📋 Exit Codes & Event IDs
 

@@ -20,6 +20,10 @@ public class OEventCourseHelperConsoleFormatterTests
     [InlineData("Course \"A\"", "Course \"\"A\"\"")]
     [InlineData("One, Two", "One, Two")]
     [InlineData("\"\"", "\"\"\"\"")]
+    [InlineData("Line\r\nBreak", "Line Break")]
+    [InlineData("Only\nNewline", "Only Newline")]
+    [InlineData("Only\rCR", "OnlyCR")]
+    [InlineData("Double\n\nSpace", "Double  Space")]
     public void WritePorcelain_ShouldCorrectlyEscapeValues(string rawInput, string expectedEscaped)
     {
         // Setup
