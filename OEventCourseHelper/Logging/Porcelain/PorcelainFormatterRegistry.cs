@@ -1,6 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-namespace OEventCourseHelper.Logging.Porcelain;
+﻿namespace OEventCourseHelper.Logging.Porcelain;
 
 internal class PorcelainFormatterRegistry
 {
@@ -8,8 +6,7 @@ internal class PorcelainFormatterRegistry
 
     public bool IsVersionSupported(string version) => formatters.ContainsKey(version);
 
-    public bool TryGetFormatter(string version, [MaybeNullWhen(false)] out IPorcelainFormatter formatter)
-        => formatters.TryGetValue(version, out formatter);
+    public IPorcelainFormatter GetFormatter(string version) => formatters[version];
 
     public bool Add(IPorcelainFormatter formatter)
         => formatters.TryAdd(formatter.Version, formatter);

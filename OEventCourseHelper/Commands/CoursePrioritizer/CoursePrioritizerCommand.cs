@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Commands.CoursePrioritizer.IO;
 using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
@@ -12,8 +12,8 @@ using Spectre.Console.Cli;
 namespace OEventCourseHelper.Commands.CoursePrioritizer;
 
 internal class CoursePrioritizerCommand(
-    ILogger<CoursePrioritizerCommand> logger,
-    IOptionsMonitor<OEventCourseHelperLoggingOptions> loggingOptions)
+    ApplicationContext applicationContext,
+    ILogger<CoursePrioritizerCommand> logger)
     : Command<CoursePrioritizerSettings>
 {
     public override ValidationResult Validate(CommandContext context, CoursePrioritizerSettings settings)
@@ -28,14 +28,19 @@ internal class CoursePrioritizerCommand(
             return ValidationResult.Error("Beam width must be a positive integer.");
         }
 
+        if (settings.Porcelain.IsSet && !applicationContext.IsPorcelainVersionSupported(settings.Porcelain.Value))
+        {
+            return ValidationResult.Error($"Invalid porcelain version: {settings.Porcelain.Value}");
+        }
+
         return ValidationResult.Success();
     }
 
     public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
     {
-        if (settings.Porcelain)
+        if (settings.Porcelain.IsSet)
         {
-            loggingOptions.CurrentValue.LoggingMode = OEventCourseHelperLoggingMode.Porcelain;
+            applicationContext.SetPorcelainLoggingMode(settings.Porcelain.Value);
         }
 
         var filter = new CourseFilter(true, [.. settings.Filters]);

@@ -35,10 +35,10 @@ OEventCourseHelper prioritize <IOFXmlFilePath> [options]
 #### Arguments & Options
 
 - `<IOFXmlFilePath>`: **(Required)** The file path to your IOF XML 3.0 course data file.
-- `-w` or `--beam-width <int>`: Sets the width of the beam for the search algorithm (Default: 3).
+- `-w` or `--beam-width <int>`: Sets the width of the beam for the search algorithm. (Default: 3)
 - `-f` or `--filter <string>`: One or more strings to filter courses by name. Only courses containing one of these strings will be included.
 - `--strict`: If set, the command will fail/abort if any controls cannot be visited by the available/filtered courses. If omitted, it logs a warning instead.
-- `--porcelain`: Outputs the results in a strict, machine-readable format.
+- `--porcelain [version]`: Outputs the results in a strict, machine-readable format. Optionally specify the output version, available versions: v1. (Default: v1)
 - `-h` or `--help`: Shows the help message and exits.
 
 #### Example
@@ -52,7 +52,7 @@ OEventCourseHelper prioritize SampleData/Test.Courses.xml -w 5 -f "Long" --stric
 The tool uses structured logging with two distinct output formatters:
 
 - **Human-Readable (Spectre)**: The default mode, providing clean console output.
-- **Machine-Readable (Porcelain)**: Activated via the `--porcelain` flag, outputting strict, tab-separated log entries (e.g., `INF:11003|PriorityResult\tpriority="1",courseName="Course 1",required="True"`) designed to be easily parsed by automation scripts.
+- **Machine-Readable (Porcelain, v1)**: Activated via the `--porcelain` flag, outputting strict, tab-separated log entries (e.g., `INF:11003|PriorityResult\tpriority="1",courseName="Course 1",required="True"`) designed to be easily parsed by automation scripts.
   - **Sanitization**: To guarantee a single-line format, Carriage Returns (`\r`) are stripped and Newlines (`\n`) are replaced with a single space.
   - **Escaping**: Internal double quotes are escaped as `""` per RFC 4180.
   - **Consistency**: Values are always enclosed in double quotes to ensure reliable parsing.
@@ -76,14 +76,15 @@ To facilitate seamless integration into CI/CD pipelines or other automated syste
 
 ### Log Event IDs
 
-When running with --porcelain, you can reliably parse these event IDs:
+When running with `--porcelain`, you can reliably parse these event IDs:
 
 #### General Events (10000 - 10999)
 
 | ID | Level | Name | Description |
 | :--- | :--- | :--- | :--- |
-| 10000 | Error | FailedToLoadFile | Logged when the input file cannot be accessed or loaded. |
-| 10001 | Error | IofSchemaViolation | Logged when the XML file violates the IOF 3.0 schema. |
+| 10000 | Critical | UnhandledException | Logged when an unknown error occurs. |
+| 10001 | Error | FailedToLoadFile | Logged when the input file cannot be accessed or loaded. |
+| 10002 | Error | IofSchemaViolation | Logged when the XML file violates the IOF 3.0 schema. |
 
 #### Course Prioritizer Events (11000 - 11999)
 
@@ -93,6 +94,7 @@ When running with --porcelain, you can reliably parse these event IDs:
 | 11001 | Warning | ControlSkippedWarning | A specific control cannot be visited by any available courses. |
 | 11002 | Error | StrictModeValidationFailed | Strict mode aborted the run due to unvisitable controls. |
 | 11003 | Info | PriorityResult | Logs the result for a single course, indicating its priority and if it is required. |
+| 11004 | Info | PrioritizeSummary | Final count of courses, required courses, and total controls visited. |
 
 ## 📥 Installation
 

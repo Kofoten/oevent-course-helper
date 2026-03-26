@@ -5,10 +5,12 @@ namespace OEventCourseHelper.Logging;
 internal static partial class LogDefinitions
 {
     #region General (10000 - 10999)
-    [LoggerMessage(10000, LogLevel.Error, "Failed to load the file: {filePath}")]
+    // NOTE: EventId: 10000 is reserved for unhandled exceptions. 
+
+    [LoggerMessage(10001, LogLevel.Error, "Failed to load the file: {filePath}")]
     public static partial void FailedToLoadFile(this ILogger logger, string filePath);
 
-    [LoggerMessage(10001, LogLevel.Error, "{message}")]
+    [LoggerMessage(10002, LogLevel.Error, "{message}")]
     public static partial void IofSchemaViolation(this ILogger logger, string message);
     #endregion
 

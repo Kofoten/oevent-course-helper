@@ -1,11 +1,13 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using OEventCourseHelper.Logging;
 using OEventCourseHelper.Logging.Porcelain;
 
 namespace OEventCourseHelper.Cli;
 
 internal class ApplicationContext(IServiceProvider serviceProvider)
 {
-    public bool ValidatePorcelainFormatterVersion(string version)
+    public bool IsPorcelainVersionSupported(string version)
     {
         var registry = serviceProvider.GetService<PorcelainFormatterRegistry>();
         if (registry is not null)
@@ -14,5 +16,15 @@ internal class ApplicationContext(IServiceProvider serviceProvider)
         }
 
         return false;
+    }
+
+    public void SetPorcelainLoggingMode(string version)
+    {
+        var formatterOptions = serviceProvider.GetService<IOptionsMonitor<OEventCourseHelperLoggingOptions>>();
+        if (formatterOptions is not null)
+        {
+            formatterOptions.CurrentValue.LoggingMode = OEventCourseHelperLoggingMode.Porcelain;
+            formatterOptions.CurrentValue.PorcelainVersion = version;
+        }
     }
 }
