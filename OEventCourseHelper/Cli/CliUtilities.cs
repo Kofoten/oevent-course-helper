@@ -8,6 +8,8 @@ namespace OEventCourseHelper.Cli;
 
 internal class CliUtilities
 {
+    private static readonly EventId UnhandledException = new(10000, "UnhandledException");
+
     public static int ExceptionHandler(Exception exception, ITypeResolver? resolver)
     {
         ILogger<Program>? logger = null;
@@ -19,7 +21,7 @@ internal class CliUtilities
 
         if (logger is not null)
         {
-            logger.LogCritical(exception, "An unexpected error occurred.");
+            logger.LogCritical(UnhandledException, exception, "An unexpected error occurred.");
         }
         else
         {
