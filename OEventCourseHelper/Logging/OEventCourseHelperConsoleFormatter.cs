@@ -2,12 +2,15 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
+using OEventCourseHelper.Logging.Porcelain;
 using Spectre.Console;
 using System.Diagnostics.CodeAnalysis;
 
 namespace OEventCourseHelper.Logging;
 
-internal class OEventCourseHelperConsoleFormatter(IOptionsMonitor<OEventCourseHelperLoggingOptions> options)
+internal class OEventCourseHelperConsoleFormatter(
+    IOptionsMonitor<OEventCourseHelperLoggingOptions> options,
+    PorcelainFormatterRegistry porcelainFormatterRegistry)
     : ConsoleFormatter(FormatterName)
 {
     public const string FormatterName = "oevent-course-helper-console-formatter";
@@ -40,76 +43,16 @@ internal class OEventCourseHelperConsoleFormatter(IOptionsMonitor<OEventCourseHe
         ansiConsole.WriteLine(message);
     }
 
-    /// <summary>
-    /// Formats the log entry inte a machine readable format: LogLevel:EventId|EventName\tparam1="value1",param2="value2"
-    /// </summary>
-    private static void WritePorcelain<TState>(in LogEntry<TState> logEntry, TextWriter textWriter)
+    private void WritePorcelain<TState>(in LogEntry<TState> logEntry, TextWriter textWriter)
     {
-        textWriter.Write(logEntry.LogLevel switch
+        if (porcelainFormatterRegistry.TryGetFormatter(options.CurrentValue.PorcelainVersion, out var formatter))
         {
-            LogLevel.Trace => "TRC",
-            LogLevel.Debug => "DBG",
-            LogLevel.Information => "INF",
-            LogLevel.Warning => "WRN",
-            LogLevel.Error => "ERR",
-            LogLevel.Critical => "CRT",
-            LogLevel.None => "NON",
-            _ => "NON"
-        });
-
-        textWriter.Write($":{logEntry.EventId.Id}");
-        if (!string.IsNullOrWhiteSpace(logEntry.EventId.Name))
-        {
-            textWriter.Write($"|{logEntry.EventId.Name}");
+            formatter.Write(logEntry, textWriter);
         }
-
-        textWriter.Write('\t');
-
-        if (logEntry.State is IEnumerable<KeyValuePair<string, object>> properties)
+        else
         {
-            bool first = true;
-            foreach (var (name, value) in properties)
-            {
-                if (name == "{OriginalFormat}")
-                {
-                    continue;
-                }
-
-                if (first)
-                {
-                    first = false;
-                }
-                else
-                {
-                    textWriter.Write(',');
-                }
-
-                textWriter.Write($"{name}=\"");
-
-                var rawValue = value?.ToString() ?? string.Empty;
-                for (int i = 0; i < rawValue.Length; i++)
-                {
-                    switch (rawValue[i])
-                    {
-                        case '\r':
-                            break;
-                        case '\n':
-                            textWriter.Write(' ');
-                            break;
-                        case '"':
-                            textWriter.Write("\"\"");
-                            break;
-                        default:
-                            textWriter.Write(rawValue[i]);
-                            break;
-                    }
-                }
-
-                textWriter.Write('"');
-            }
+            textWriter.WriteLine(logEntry.Formatter.Invoke(logEntry.State, null));
         }
-
-        textWriter.WriteLine();
     }
 
     [MemberNotNull(nameof(ansiConsole))]

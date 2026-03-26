@@ -25,7 +25,7 @@ internal class CoursePrioritizerCommand(
 
         if (settings.BeamWidth <= 0)
         {
-            return ValidationResult.Error("Beam width must be positive.");
+            return ValidationResult.Error("Beam width must be a positive integer.");
         }
 
         return ValidationResult.Success();
@@ -65,10 +65,17 @@ internal class CoursePrioritizerCommand(
             return ExitCode.NoSolutionFound;
         }
 
+        var requiredCount = 0;
         for (int i = 0; i < result.Length; i++)
         {
             logger.PriorityResult(i + 1, result[i].CourseName, result[i].IsRequired);
+            if (result[i].IsRequired)
+            {
+                requiredCount++;
+            }
         }
+
+        logger.PrioritizeSummary(dataSet.Courses.Length, requiredCount, 0, dataSet.Controls.Length);
 
         return ExitCode.Success;
     }

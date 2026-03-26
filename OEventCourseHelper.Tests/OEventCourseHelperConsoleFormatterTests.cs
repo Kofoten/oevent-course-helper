@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using OEventCourseHelper.Logging;
+using OEventCourseHelper.Logging.Porcelain;
 using OEventCourseHelper.Tests.TestUtilities;
 using System.Text;
 
@@ -24,10 +25,10 @@ public class OEventCourseHelperConsoleFormatterTests
     [InlineData("Only\nNewline", "Only Newline")]
     [InlineData("Only\rCR", "OnlyCR")]
     [InlineData("Double\n\nSpace", "Double  Space")]
-    public void WritePorcelain_ShouldCorrectlyEscapeValues(string rawInput, string expectedEscaped)
+    public void WritePorcelainV1_ShouldCorrectlyEscapeValues(string rawInput, string expectedEscaped)
     {
         // Setup
-        var formatter = new OEventCourseHelperConsoleFormatter(OptionsMonitor);
+        var formatter = new V1PorcelainFormatter();
         var output = new StringBuilder();
         using var writer = new StringWriter(output);
 
@@ -47,7 +48,7 @@ public class OEventCourseHelperConsoleFormatterTests
             (s, e) => string.Empty);
 
         // Act
-        formatter.Write(logEntry, null, writer);
+        formatter.Write(logEntry, writer);
 
         // Assert
         var result = output.ToString();
