@@ -1,4 +1,6 @@
 ﻿using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer;
 using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using OEventCourseHelper.Logging;
@@ -14,9 +16,9 @@ public class CoursePrioritizerCommandTests
     {
         // Setup
         var options = new OEventCourseHelperLoggingOptions();
-        var monitor = new TestOptionsMonitor<OEventCourseHelperLoggingOptions>(options);
+        var appContext = new ApplicationContext(new ServiceCollection().BuildServiceProvider());
         var fakeLogger = new FakeLogger<CoursePrioritizerCommand>();
-        var command = new CoursePrioritizerCommand(fakeLogger, monitor);
+        var command = new CoursePrioritizerCommand(appContext, fakeLogger);
 
         var controls = ImmutableArray.Create("31", "32", "33");
         var courses = ImmutableArray.Create(new Course(0, "Course 1", new BitMask([0b011UL]), 2));
@@ -35,9 +37,9 @@ public class CoursePrioritizerCommandTests
     {
         // Setup
         var options = new OEventCourseHelperLoggingOptions();
-        var monitor = new TestOptionsMonitor<OEventCourseHelperLoggingOptions>(options);
+        var appContext = new ApplicationContext(new ServiceCollection().BuildServiceProvider());
         var fakeLogger = new FakeLogger<CoursePrioritizerCommand>();
-        var command = new CoursePrioritizerCommand(fakeLogger, monitor);
+        var command = new CoursePrioritizerCommand(appContext, fakeLogger);
 
         var controls = ImmutableArray.Create("31", "32", "33");
         var courses = ImmutableArray.Create(new Course(0, "Course 1", new BitMask([0b011UL]), 2));
