@@ -24,15 +24,16 @@ public class BeamSearchSolverTests
         var solver = new BeamSearchSolver(3);
 
         // Act
-        var solutionFound = solver.TrySolve(dataSet, out var actual);
+        var actual = solver.Solve(dataSet);
 
         // Assert
-        solutionFound.Should().BeTrue();
-        actual!.Length.Should().Be(4);
-        actual[0].Should().Be(new BeamSearchSolver.ResultItem("Rarest", true));
-        actual[1].Should().Be(new BeamSearchSolver.ResultItem("Longest", true));
-        actual[2].Should().Be(new BeamSearchSolver.ResultItem("Control", true));
-        actual[3].Should().Be(new BeamSearchSolver.ResultItem("Dominated", false));
+        actual.Success.Should().BeTrue();
+        actual.CourseMask!.Value.PopCount.Should().Be(3);
+        actual.PriorityOrder.Length.Should().Be(4);
+        actual.PriorityOrder[0].Should().Be(new PrioritizedCourse("Rarest", true));
+        actual.PriorityOrder[1].Should().Be(new PrioritizedCourse("Longest", true));
+        actual.PriorityOrder[2].Should().Be(new PrioritizedCourse("Control", true));
+        actual.PriorityOrder[3].Should().Be(new PrioritizedCourse("Dominated", false));
     }
 
     [Fact]
@@ -49,13 +50,13 @@ public class BeamSearchSolverTests
         var solver = new BeamSearchSolver(1);
 
         // Act
-        var solutionFound = solver.TrySolve(dataSet, out var actual);
+        var actual = solver.Solve(dataSet);
 
         // Assert
-        solutionFound.Should().BeTrue();
-        actual!.Length.Should().Be(2);
-        actual[0].Should().Be(new BeamSearchSolver.ResultItem("B", true));
-        actual[1].Should().Be(new BeamSearchSolver.ResultItem("A", false));
+        actual.Success.Should().BeTrue();
+        actual.PriorityOrder.Length.Should().Be(2);
+        actual.PriorityOrder[0].Should().Be(new PrioritizedCourse("B", true));
+        actual.PriorityOrder[1].Should().Be(new PrioritizedCourse("A", false));
     }
 
     [Fact]
@@ -73,14 +74,13 @@ public class BeamSearchSolverTests
         var solver = new BeamSearchSolver(3);
 
         // Act
-        var solutionFound = solver.TrySolve(dataSet, out var actual);
+        var actual = solver.Solve(dataSet);
 
         // Assert
-        solutionFound.Should().BeTrue();
-        actual.Should().NotBeNull();
-        actual.Should().ContainEquivalentOf(new BeamSearchSolver.ResultItem("Superset", true));
-        actual.Should().ContainEquivalentOf(new BeamSearchSolver.ResultItem("Other", true));
-        actual.Should().ContainEquivalentOf(new BeamSearchSolver.ResultItem("Subset", false));
+        actual.Success.Should().BeTrue();
+        actual.PriorityOrder.Should().ContainEquivalentOf(new PrioritizedCourse("Superset", true));
+        actual.PriorityOrder.Should().ContainEquivalentOf(new PrioritizedCourse("Other", true));
+        actual.PriorityOrder.Should().ContainEquivalentOf(new PrioritizedCourse("Subset", false));
     }
 
     [Fact]
@@ -91,10 +91,10 @@ public class BeamSearchSolverTests
         var solver = new BeamSearchSolver(3);
 
         // Act
-        var solutionFound = solver.TrySolve(dataSet, out var actual);
+        var actual = solver.Solve(dataSet);
 
         // Assert
-        solutionFound.Should().BeTrue();
-        actual.Should().BeEmpty();
+        actual.Success.Should().BeTrue();
+        actual.PriorityOrder.Should().BeEmpty();
     }
 }

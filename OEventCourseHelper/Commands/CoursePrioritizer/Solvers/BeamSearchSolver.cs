@@ -1,7 +1,6 @@
 ﻿using OEventCourseHelper.Commands.CoursePrioritizer.Data;
 using System.Collections.Immutable;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
@@ -25,30 +24,34 @@ internal class BeamSearchSolver(int BeamWidth)
     /// </list>
     /// </remarks>
     /// <param name="dataSet">The data set to try and compute a solution for.</param>
-    /// <param name="priority">The prioritized order of the courses where the required courses has the <see cref="ResultItem.IsRequired"/> property set to True.</param>
-    /// <returns>True if a solution could be found; otherwise False</returns>
-    public bool TrySolve(EventDataSet dataSet, [NotNullWhen(true)] out ResultItem[]? priority)
+    /// <returns>The solution found by the <see cref="BeamSearchSolver"/></returns>
+    public BeamSearchSolverResult Solve(EventDataSet dataSet)
     {
         var context = CreateContext(dataSet);
         var requiredCoursesResult = PerformBeamSearch(context);
         if (requiredCoursesResult is null)
         {
-            priority = null;
-            return false;
+            return new()
+            {
+                Success = false,
+            };
         }
 
-        priority = [
-            .. requiredCoursesResult.Order
-                .Select(x => new ResultItem(x.CourseName, true)),
+        return new()
+        {
+            Success = true,
+            CourseMask = requiredCoursesResult.CourseMask,
+            PriorityOrder = [
+            .. requiredCoursesResult.CourseOrder
+                .Select(x => new PrioritizedCourse(x.CourseName, true)),
             .. context.Courses
-                .Where(x => !requiredCoursesResult.Mask[x.CourseIndex])
+                .Where(x => !requiredCoursesResult.CourseMask[x.CourseIndex])
                 .OrderBy(x => context.DominatedCoursesMask[x.CourseIndex])
                 .ThenByDescending(x => x.ControlCount)
                 .ThenBy(x => x.CourseName)
-                .Select(x => new ResultItem(x.CourseName, false)),
-        ];
-
-        return true;
+                .Select(x => new PrioritizedCourse(x.CourseName, false)),
+            ]
+        };
     }
 
     /// <summary>
@@ -57,7 +60,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// </summary>
     /// <param name="context">The context of the current search.</param>
     /// <returns>The required courses ordered by their respective priority.</returns>
-    private BeamSearchSolverResult? PerformBeamSearch(BeamSearchSolverContext context)
+    private PerformResult? PerformBeamSearch(BeamSearchSolverContext context)
     {
         var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
@@ -332,5 +335,10 @@ internal class BeamSearchSolver(int BeamWidth)
         }
     }
 
-    public record ResultItem(string CourseName, bool IsRequired);
+    /// <summary>
+    /// An object containing the result of the solver.
+    /// </summary>
+    /// <param name="CourseMask">A mask containing all required courses.</param>
+    /// <param name="CourseOrder">All the event courses ordered by priority by the solver.</param>
+    private record PerformResult(BitMask CourseMask, ImmutableList<Course> CourseOrder);
 }

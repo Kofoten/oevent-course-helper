@@ -25,10 +25,11 @@ public class CoursePrioritizerCommandTests
         var dataSet = new EventDataSet(controls, courses);
 
         // Act
-        var result = command.ValidateDataSet(dataSet, strict: true);
+        var result = command.ValidateDataSet(dataSet, strict: true, out var skippedControls);
 
         // Assert
         result.Should().BeFalse();
+        skippedControls.Should().Be(0);
         fakeLogger.Logs.Should().Contain(l => l.Id.Id == 11002);
     }
 
@@ -46,10 +47,11 @@ public class CoursePrioritizerCommandTests
         var dataSet = new EventDataSet(controls, courses);
 
         // Act
-        var result = command.ValidateDataSet(dataSet, strict: false);
+        var result = command.ValidateDataSet(dataSet, strict: false, out var skippedControls);
 
         // Assert
         result.Should().BeTrue();
+        skippedControls.Should().Be(1);
         fakeLogger.Logs.Should().Contain(l => l.Id.Id == 11001);
         fakeLogger.Logs.Should().Contain(l => l.Message.Contains("33"));
     }

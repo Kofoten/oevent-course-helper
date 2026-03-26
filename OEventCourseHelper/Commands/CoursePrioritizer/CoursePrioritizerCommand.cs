@@ -58,35 +58,38 @@ internal class CoursePrioritizerCommand(
         }
 
         var dataSet = dataSetReader.GetEventDataSet();
-        if (!ValidateDataSet(dataSet, settings.Strict))
+        if (!ValidateDataSet(dataSet, settings.Strict, out var skippedControls))
         {
             return ExitCode.ValidationFailed;
         }
 
         var solver = new BeamSearchSolver(settings.BeamWidth);
-        if (!solver.TrySolve(dataSet, out var result))
+        var result = solver.Solve(dataSet);
+        if (!result.Success)
         {
             logger.NoSolutionFound();
             return ExitCode.NoSolutionFound;
         }
 
-        var requiredCount = 0;
-        for (int i = 0; i < result.Length; i++)
+        var priority = 0;
+        foreach (var prioritizedCourse in result.PriorityOrder)
         {
-            logger.PriorityResult(i + 1, result[i].CourseName, result[i].IsRequired);
-            if (result[i].IsRequired)
-            {
-                requiredCount++;
-            }
+            priority++;
+            logger.PriorityResult(priority, prioritizedCourse.CourseName, prioritizedCourse.IsRequired);
         }
 
-        logger.PrioritizeSummary(dataSet.Courses.Length, requiredCount, 0, dataSet.Controls.Length);
+        logger.PrioritizeSummary(
+            dataSet.Courses.Length,
+            result.CourseMask.Value.PopCount,
+            dataSet.Controls.Length - skippedControls,
+            dataSet.Controls.Length);
 
         return ExitCode.Success;
     }
 
-    public bool ValidateDataSet(EventDataSet dataSet, bool strict)
+    public bool ValidateDataSet(EventDataSet dataSet, bool strict, out int skippedControls)
     {
+        skippedControls = 0;
         var orphanedControlsMaskBuilder = BitMask.Builder.From(BitMask.Fill(dataSet.Controls.Length));
         foreach (var course in dataSet.Courses)
         {
@@ -107,6 +110,7 @@ internal class CoursePrioritizerCommand(
 
         foreach (var control in orphanedControlsMask)
         {
+            skippedControls++;
             logger.ControlSkippedWarning(dataSet.Controls[control]);
         }
 
