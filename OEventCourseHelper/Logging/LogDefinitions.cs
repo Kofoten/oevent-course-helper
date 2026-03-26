@@ -5,12 +5,16 @@ namespace OEventCourseHelper.Logging;
 internal static partial class LogDefinitions
 {
     #region General (10000 - 10999)
-    // NOTE: EventId: 10000 is reserved for unhandled exceptions. 
+    [LoggerMessage(10000, LogLevel.Critical, "An unexpected error occurred.")]
+    public static partial void UnhandledException(this ILogger logger, Exception exception);
 
-    [LoggerMessage(10001, LogLevel.Error, "Failed to load the file: {filePath}")]
+    [LoggerMessage(10001, LogLevel.Error, "Failed to parse arguments: {message}")]
+    public static partial void FailedToParseArguments(this ILogger logger, string message);
+
+    [LoggerMessage(10002, LogLevel.Error, "Failed to load the file: {filePath}")]
     public static partial void FailedToLoadFile(this ILogger logger, string filePath);
 
-    [LoggerMessage(10002, LogLevel.Error, "{message}")]
+    [LoggerMessage(10003, LogLevel.Error, "{message}")]
     public static partial void IofSchemaViolation(this ILogger logger, string message);
     #endregion
 

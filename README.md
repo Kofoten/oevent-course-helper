@@ -83,8 +83,9 @@ When running with `--porcelain`, you can reliably parse these event IDs:
 | ID | Level | Name | Description |
 | :--- | :--- | :--- | :--- |
 | 10000 | Critical | UnhandledException | Logged when an unknown error occurs. |
-| 10001 | Error | FailedToLoadFile | Logged when the input file cannot be accessed or loaded. |
-| 10002 | Error | IofSchemaViolation | Logged when the XML file violates the IOF 3.0 schema. |
+| 10001 | Error | FailedToParseArguments | Logged when there invalid arguments are passed |
+| 10002 | Error | FailedToLoadFile | Logged when the input file cannot be accessed or loaded. |
+| 10003 | Error | IofSchemaViolation | Logged when the XML file violates the IOF 3.0 schema. |
 
 #### Course Prioritizer Events (11000 - 11999)
 
