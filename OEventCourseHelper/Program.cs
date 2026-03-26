@@ -8,6 +8,8 @@ using OEventCourseHelper.Logging;
 using OEventCourseHelper.Logging.Porcelain;
 using Spectre.Console.Cli;
 
+var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown";
+
 var services = new ServiceCollection()
     .Configure<OEventCourseHelperLoggingOptions>(_ => { })
     .AddSingleton(sp => new ApplicationContext(sp))
@@ -29,6 +31,8 @@ var registrar = new TypeRegistrar(services);
 var app = new CommandApp(registrar);
 app.Configure(config =>
 {
+    config.SetApplicationName("OEventCourseHelper");
+    config.SetApplicationVersion(version);
     config.AddCommand<CoursePrioritizerCommand>("prioritize");
     config.SetExceptionHandler(CliUtilities.ExceptionHandler);
 });
