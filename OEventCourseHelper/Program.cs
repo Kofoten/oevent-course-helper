@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer;
-using OEventCourseHelper.Extensions;
 using OEventCourseHelper.Logging;
 using OEventCourseHelper.Logging.Porcelain;
 using Spectre.Console.Cli;
@@ -13,10 +12,8 @@ var version = typeof(Program).Assembly.GetName().Version?.ToString() ?? "unknown
 var services = new ServiceCollection()
     .Configure<OEventCourseHelperLoggingOptions>(_ => { })
     .AddSingleton(sp => new ApplicationContext(sp))
-    .AddPorcelainFormatters((registry) =>
-    {
-        registry.Add(new V1PorcelainFormatter());
-    })
+    .AddSingleton<IPorcelainFormatter, V1PorcelainFormatter>()
+    .AddSingleton<PorcelainFormatterRegistry>()
     .AddLogging(builder =>
     {
         builder.AddConsoleFormatter<OEventCourseHelperConsoleFormatter, ConsoleFormatterOptions>();
