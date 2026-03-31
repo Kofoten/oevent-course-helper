@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using OEventCourseHelper.Logging;
 using OEventCourseHelper.Logging.Porcelain;
-using OEventCourseHelper.Tests.TestUtilities;
+using OEventCourseHelper.TestUtilities;
 using System.Text;
 
 namespace OEventCourseHelper.Tests;

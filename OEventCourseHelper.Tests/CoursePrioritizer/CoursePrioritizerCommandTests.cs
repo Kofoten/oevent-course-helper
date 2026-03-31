@@ -2,9 +2,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using OEventCourseHelper.Cli;
 using OEventCourseHelper.Commands.CoursePrioritizer;
-using OEventCourseHelper.Commands.CoursePrioritizer.Data;
+using OEventCourseHelper.Core.CoursePrioritizer;
+using OEventCourseHelper.Core.Data;
 using OEventCourseHelper.Logging;
-using OEventCourseHelper.Tests.TestUtilities;
+using OEventCourseHelper.TestUtilities;
 using System.Collections.Immutable;
 
 namespace OEventCourseHelper.Tests.CoursePrioritizer;

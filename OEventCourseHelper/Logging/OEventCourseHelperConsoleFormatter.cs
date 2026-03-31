@@ -27,7 +27,7 @@ internal class OEventCourseHelperConsoleFormatter(
     private static readonly Style eventIdStyle = new(Color.DarkSeaGreen3, Color.Black);
     private static readonly Style parameterHighlightingStyle = new(Color.LightSteelBlue, Color.Black);
 
-    private readonly object ansiConsoleInitLock = new();
+    private readonly Lock ansiConsoleInitLock = new();
     private IAnsiConsole? ansiConsole = null;
 
     public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)

@@ -9,16 +9,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Xml\IOF.xsd" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="Xml\Iof\IOF.xsd">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
     <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
@@ -38,6 +28,10 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>OEventCourseHelper.Tests</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OEventCourseHelper.Core\OEventCourseHelper.Core.csproj" />
   </ItemGroup>
 
 </Project>
