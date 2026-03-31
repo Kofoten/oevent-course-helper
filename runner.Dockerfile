@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS sdk-source
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS sdk-source
 FROM ghcr.io/actions/actions-runner:latest
 
 USER root
