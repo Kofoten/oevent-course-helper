@@ -34,6 +34,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{31
 		Licenses\Spectre.Console_0.53.1 = Licenses\Spectre.Console_0.53.1
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Core", "OEventCourseHelper.Core\OEventCourseHelper.Core.csproj", "{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Core.Tests", "OEventCourseHelper.Core.Tests\OEventCourseHelper.Core.Tests.csproj", "{707A75BC-B9E9-4CF5-B3B9-4FD2B3A379C0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.TestUtilities", "OEventCourseHelper.TestUtilities\OEventCourseHelper.TestUtilities.csproj", "{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +58,18 @@ Global
 		{17A0EFDC-D0A6-4910-9119-981D05FB9D92}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17A0EFDC-D0A6-4910-9119-981D05FB9D92}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17A0EFDC-D0A6-4910-9119-981D05FB9D92}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{707A75BC-B9E9-4CF5-B3B9-4FD2B3A379C0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{707A75BC-B9E9-4CF5-B3B9-4FD2B3A379C0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{707A75BC-B9E9-4CF5-B3B9-4FD2B3A379C0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{707A75BC-B9E9-4CF5-B3B9-4FD2B3A379C0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

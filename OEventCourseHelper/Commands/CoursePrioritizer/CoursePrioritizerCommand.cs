@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using OEventCourseHelper.Cli;
-using OEventCourseHelper.Commands.CoursePrioritizer.Data;
-using OEventCourseHelper.Commands.CoursePrioritizer.IO;
-using OEventCourseHelper.Commands.CoursePrioritizer.Solvers;
+using OEventCourseHelper.Core.CoursePrioritizer;
+using OEventCourseHelper.Core.CoursePrioritizer.IO;
+using OEventCourseHelper.Core.Data;
+using OEventCourseHelper.Core.Xml.Iof;
 using OEventCourseHelper.Data;
 using OEventCourseHelper.Logging;
-using OEventCourseHelper.Xml.Iof;
 using Spectre.Console;
 using Spectre.Console.Cli;
 
@@ -46,7 +46,7 @@ internal class CoursePrioritizerCommand(
         var filter = new CourseFilter(true, [.. settings.Filters]);
         var dataSetReader = new EventDataSetNodeReader(filter);
         var iofReader = IOFXmlReader.Create();
-        if (!iofReader.TryStream(settings.IofXmlFilePath, dataSetReader, out var errors))
+        if (!iofReader.TryStreamFile(settings.IofXmlFilePath, dataSetReader, out var errors))
         {
             foreach (var error in errors)
             {
