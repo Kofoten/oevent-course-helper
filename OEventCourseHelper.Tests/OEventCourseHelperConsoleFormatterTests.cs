@@ -7,7 +7,7 @@ using OEventCourseHelper.Logging.Porcelain;
 using OEventCourseHelper.Tests.TestUtilities;
 using System.Text;
 
-namespace OEventCourseHelper.Tests.Logging;
+namespace OEventCourseHelper.Tests;
 
 public class OEventCourseHelperConsoleFormatterTests
 {

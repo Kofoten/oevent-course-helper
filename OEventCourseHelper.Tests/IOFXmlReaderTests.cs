@@ -1,7 +1,7 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Xml.Iof;
 
-namespace OEventCourseHelper.Tests.Xml;
+namespace OEventCourseHelper.Tests;
 
 public class IOFXmlReaderTests
 {
