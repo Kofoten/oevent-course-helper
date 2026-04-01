@@ -1,7 +1,7 @@
 ﻿using OEventCourseHelper.Core.Data;
 using System.Collections.Immutable;
 
-namespace OEventCourseHelper.Core.CoursePrioritizer;
+namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
 /// <summary>
 /// Contains a possible solution of which courses are required for the test run.

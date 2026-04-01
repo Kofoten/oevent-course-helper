@@ -1,11 +1,12 @@
-﻿using OEventCourseHelper.Core.Data;
+﻿using OEventCourseHelper.Core.CoursePrioritizer.IO;
+using OEventCourseHelper.Core.Data;
 using System.Collections.Immutable;
 using System.Data;
 using System.Runtime.InteropServices;
 
-namespace OEventCourseHelper.Core.CoursePrioritizer;
+namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
-public class BeamSearchSolver(int BeamWidth)
+internal class BeamSearchSolver(int BeamWidth)
 {
     public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
 

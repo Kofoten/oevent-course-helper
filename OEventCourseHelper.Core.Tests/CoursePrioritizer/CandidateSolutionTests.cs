@@ -1,5 +1,6 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Core.CoursePrioritizer;
+using OEventCourseHelper.Core.CoursePrioritizer.Solver;
 using OEventCourseHelper.Core.Data;
 using System.Collections.Immutable;
 

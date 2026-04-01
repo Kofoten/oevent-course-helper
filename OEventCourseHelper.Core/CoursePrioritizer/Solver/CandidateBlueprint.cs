@@ -1,6 +1,6 @@
 ﻿using OEventCourseHelper.Core.Data;
 
-namespace OEventCourseHelper.Core.CoursePrioritizer;
+namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
 /// <summary>
 /// A blueprint used to materialize an instance of <see cref="CandidateSolution"/>.

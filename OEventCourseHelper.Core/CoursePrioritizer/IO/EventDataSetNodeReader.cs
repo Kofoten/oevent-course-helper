@@ -9,7 +9,7 @@ namespace OEventCourseHelper.Core.CoursePrioritizer.IO;
 /// <summary>
 /// Reads the courses from a IOF 3.0 Xml file and counts the total number of used controls.
 /// </summary>
-public class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
+internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
 {
     private const string Namespace = "http://www.orienteering.org/datastandard/3.0";
 

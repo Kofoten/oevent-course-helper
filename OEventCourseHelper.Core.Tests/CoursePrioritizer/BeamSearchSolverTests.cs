@@ -1,5 +1,7 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Core.CoursePrioritizer;
+using OEventCourseHelper.Core.CoursePrioritizer.IO;
+using OEventCourseHelper.Core.CoursePrioritizer.Solver;
 using System.Runtime.InteropServices;
 
 namespace OEventCourseHelper.Core.Tests.CoursePrioritizer;

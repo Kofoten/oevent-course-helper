@@ -1,9 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using OEventCourseHelper.Cli;
 using OEventCourseHelper.Core.CoursePrioritizer;
-using OEventCourseHelper.Core.CoursePrioritizer.IO;
-using OEventCourseHelper.Core.Data;
-using OEventCourseHelper.Core.Xml.Iof;
 using OEventCourseHelper.Data;
 using OEventCourseHelper.Logging;
 using Spectre.Console;
@@ -43,36 +40,52 @@ internal class CoursePrioritizerCommand(
             applicationContext.SetPorcelainLoggingMode(settings.Porcelain.Value);
         }
 
-        var filter = new CourseFilter(true, [.. settings.Filters]);
-        var dataSetReader = new EventDataSetNodeReader(filter);
+        var engine = new CoursePrioritizerEngine(settings.BeamWidth, settings.Strict, settings.Filters);
+
+        CoursePrioritizerResult result;
         using (var fileStream = new FileStream(settings.IofXmlFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
-        using (var reader = IOFXmlReader.Create(fileStream, dataSetReader))
         {
-            if (!reader.TryStream())
-            {
-                foreach (var error in reader.Errors)
-                {
-                    logger.IofSchemaViolation(error);
-                }
-
-                logger.FailedToLoadFile(settings.IofXmlFilePath);
-                return ExitCode.FailedToLoadFile;
-            }
+            result = engine.Run(fileStream);
         }
 
-        var dataSet = dataSetReader.GetEventDataSet();
-        if (!ValidateDataSet(dataSet, settings.Strict, out var skippedControls))
+        return result switch
         {
-            return ExitCode.ValidationFailed;
+            CoursePrioritizerResult.ParseStreamFailure r => HandleParseStreamFailure(r, settings.IofXmlFilePath),
+            CoursePrioritizerResult.ValidationFailure r => HandleValidationFailure(r),
+            CoursePrioritizerResult.NoSolutionFound r => HandleNoSolutionFound(r),
+            CoursePrioritizerResult.Success r => HandleSuccess(r),
+            _ => throw new NotImplementedException($"No handler exists for type: {result.GetType().Name}")
+        };
+    }
+
+    private int HandleParseStreamFailure(CoursePrioritizerResult.ParseStreamFailure result, string iofXmlFilePath)
+    {
+        foreach (var error in result.Errors)
+        {
+            logger.IofSchemaViolation(error);
         }
 
-        var solver = new BeamSearchSolver(settings.BeamWidth);
-        var result = solver.Solve(dataSet);
-        if (!result.Success)
-        {
-            logger.NoSolutionFound();
-            return ExitCode.NoSolutionFound;
-        }
+        logger.FailedToLoadFile(iofXmlFilePath);
+        return ExitCode.FailedToLoadFile;
+    }
+
+    private int HandleValidationFailure(CoursePrioritizerResult.ValidationFailure result)
+    {
+        LogSkippedControls(result.ValidationInfo.SkippedControls);
+        logger.StrictModeValidationFailed(result.ValidationInfo.SkippedControls.Count);
+        return ExitCode.ValidationFailed;
+    }
+
+    private int HandleNoSolutionFound(CoursePrioritizerResult.NoSolutionFound result)
+    {
+        LogSkippedControls(result.ValidationInfo.SkippedControls);
+        logger.NoSolutionFound();
+        return ExitCode.NoSolutionFound;
+    }
+
+    private int HandleSuccess(CoursePrioritizerResult.Success result)
+    {
+        LogSkippedControls(result.ValidationInfo.SkippedControls);
 
         var priority = 0;
         foreach (var prioritizedCourse in result.PriorityOrder)
@@ -82,41 +95,19 @@ internal class CoursePrioritizerCommand(
         }
 
         logger.PrioritizeSummary(
-            dataSet.Courses.Length,
-            result.CourseMask.Value.PopCount,
-            dataSet.Controls.Length - skippedControls,
-            dataSet.Controls.Length);
+            result.Summary.TotalCourseCount,
+            result.Summary.RequiredCourseCount,
+            result.Summary.VisitedControlCount,
+            result.Summary.TotalControlCount);
 
         return ExitCode.Success;
     }
 
-    public bool ValidateDataSet(EventDataSet dataSet, bool strict, out int skippedControls)
+    private void LogSkippedControls(IEnumerable<string> skippedControls)
     {
-        skippedControls = 0;
-        var orphanedControlsMaskBuilder = BitMask.Builder.From(BitMask.Fill(dataSet.Controls.Length));
-        foreach (var course in dataSet.Courses)
+        foreach (var skippedControl in skippedControls)
         {
-            orphanedControlsMaskBuilder.AndNot(course.ControlMask);
+            logger.ControlSkippedWarning(skippedControl);
         }
-
-        var orphanedControlsMask = orphanedControlsMaskBuilder.ToBitMask();
-        if (orphanedControlsMask.IsZero)
-        {
-            return true;
-        }
-
-        if (strict)
-        {
-            logger.StrictModeValidationFailed(orphanedControlsMask.PopCount);
-            return false;
-        }
-
-        foreach (var control in orphanedControlsMask)
-        {
-            skippedControls++;
-            logger.ControlSkippedWarning(dataSet.Controls[control]);
-        }
-
-        return true;
     }
 }
