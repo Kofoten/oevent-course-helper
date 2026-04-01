@@ -54,6 +54,12 @@ jobs:
           CLEAN_VER=${GITHUB_REF_NAME#v}
           echo "SEMVER=$CLEAN_VER" >> $GITHUB_ENV
 
+      - name: Authenticate with NuGet.org
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: RasmusSteen
+
       - name: Restore Dependencies
         run: dotnet restore -p:Version=${{ env.SEMVER }}
 
@@ -94,10 +100,18 @@ jobs:
             zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
           done
 
+      - name: Pack OEventCourseHelper.Core
+        run: dotnet pack OEventCourseHelper.Core/OEventCourseHelper.Core.csproj -c Release -o ./nupkg -p:Version=${{ env.SEMVER }}
+
+      - name: Publish OEventCourseHelper.Core to NuGet
+        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.nuget_login.outputs.NUGET_API_KEY }} --skip-duplicate
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.VERSION }}
           name: Release ${{ env.VERSION }}
+          body: |
+            **NuGet Package:** [OEventCourseHelper.Core ${{ env.SEMVER }}](https://www.nuget.org/packages/OEventCourseHelper.Core/${{ env.SEMVER }})
           files: OEventCourseHelper-${{ env.VERSION }}-*.zip
           generate_release_notes: true
