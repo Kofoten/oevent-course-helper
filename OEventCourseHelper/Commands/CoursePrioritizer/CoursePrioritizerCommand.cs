@@ -45,16 +45,19 @@ internal class CoursePrioritizerCommand(
 
         var filter = new CourseFilter(true, [.. settings.Filters]);
         var dataSetReader = new EventDataSetNodeReader(filter);
-        var iofReader = IOFXmlReader.Create();
-        if (!iofReader.TryStreamFile(settings.IofXmlFilePath, dataSetReader, out var errors))
+        using (var fileStream = new FileStream(settings.IofXmlFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var reader = IOFXmlReader.Create(fileStream, dataSetReader))
         {
-            foreach (var error in errors)
+            if (!reader.TryStream())
             {
-                logger.IofSchemaViolation(error);
-            }
+                foreach (var error in reader.Errors)
+                {
+                    logger.IofSchemaViolation(error);
+                }
 
-            logger.FailedToLoadFile(settings.IofXmlFilePath);
-            return ExitCode.FailedToLoadFile;
+                logger.FailedToLoadFile(settings.IofXmlFilePath);
+                return ExitCode.FailedToLoadFile;
+            }
         }
 
         var dataSet = dataSetReader.GetEventDataSet();

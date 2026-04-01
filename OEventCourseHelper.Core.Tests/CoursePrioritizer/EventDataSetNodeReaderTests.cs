@@ -42,19 +42,20 @@ public class EventDataSetNodeReaderTests
         // Setup
         var filter = new CourseFilter(FilterEmpty: true, NameIncludes: []);
         var reader = new EventDataSetNodeReader(filter);
-        var iofReader = IOFXmlReader.Create();
         var tempPath = Path.GetTempFileName();
 
         try
         {
             File.WriteAllText(tempPath, SampleXml);
+            using var stream = File.OpenRead(tempPath);
+            using var iofReader = IOFXmlReader.Create(stream, reader);
 
             // Act
-            var success = iofReader.TryStreamFile(tempPath, reader, out var errors);
+            var success = iofReader.TryStream();
 
             // Assert
             success.Should().BeTrue();
-            errors.Should().BeEmpty();
+            iofReader.Errors.Should().BeEmpty();
 
             var dataSet = reader.GetEventDataSet();
             dataSet.Controls.Should().HaveCount(2);
@@ -99,20 +100,21 @@ public class EventDataSetNodeReaderTests
 
         var filter = new CourseFilter(FilterEmpty: false, NameIncludes: []);
         var reader = new EventDataSetNodeReader(filter);
-        var iofReader = IOFXmlReader.Create();
         var tempPath = Path.GetTempFileName();
 
         try
         {
             File.WriteAllText(tempPath, outOfOrderXml);
+            using var stream = File.OpenRead(tempPath);
+            using var iofReader = IOFXmlReader.Create(stream, reader);
 
             // Act
-            var success = iofReader.TryStreamFile(tempPath, reader, out var errors);
+            var success = iofReader.TryStream();
 
             // Assert
             success.Should().BeFalse();
-            errors.Should().NotBeNull();
-            errors.Should().ContainSingle(e => e == "Validation Error: Element 'Control' encountered out of order."
+            iofReader.Errors.Should().NotBeNull();
+            iofReader.Errors.Should().ContainSingle(e => e == "Validation Error: Element 'Control' encountered out of order."
                 ||
                 e.StartsWith("The element 'RaceCourseData' in namespace 'http://www.orienteering.org/datastandard/3.0' has invalid child element 'Control' in namespace 'http://www.orienteering.org/datastandard/3.0'."));
         }
@@ -143,20 +145,21 @@ public class EventDataSetNodeReaderTests
 
         var filter = new CourseFilter(FilterEmpty: false, NameIncludes: []);
         var reader = new EventDataSetNodeReader(filter);
-        var iofReader = IOFXmlReader.Create();
         var tempPath = Path.GetTempFileName();
 
         try
         {
             File.WriteAllText(tempPath, undefinedControlXml);
+            using var stream = File.OpenRead(tempPath);
+            using var iofReader = IOFXmlReader.Create(stream, reader);
 
             // Act
-            var success = iofReader.TryStreamFile(tempPath, reader, out var errors);
+            var success = iofReader.TryStream();
 
             // Assert
             success.Should().BeFalse();
-            errors.Should().NotBeNull();
-            errors.Should().ContainSingle(e => e == "Validation Error: Course 'TestCourse' references undefined control '999'.");
+            iofReader.Errors.Should().NotBeNull();
+            iofReader.Errors.Should().ContainSingle(e => e == "Validation Error: Course 'TestCourse' references undefined control '999'.");
         }
         finally
         {
@@ -177,20 +180,21 @@ public class EventDataSetNodeReaderTests
 
         var filter = new CourseFilter(FilterEmpty: false, NameIncludes: []);
         var reader = new EventDataSetNodeReader(filter);
-        var iofReader = IOFXmlReader.Create();
         var tempPath = Path.GetTempFileName();
 
         try
         {
             File.WriteAllText(tempPath, missingEventXml);
+            using var stream = File.OpenRead(tempPath);
+            using var iofReader = IOFXmlReader.Create(stream, reader);
 
             // Act
-            var success = iofReader.TryStreamFile(tempPath, reader, out var errors);
+            var success = iofReader.TryStream();
 
             // Assert
             success.Should().BeFalse();
-            errors.Should().NotBeNullOrEmpty();
-            errors.Should().ContainSingle(e => e == "The element 'CourseData' in namespace 'http://www.orienteering.org/datastandard/3.0' has invalid child element 'RaceCourseData' in namespace 'http://www.orienteering.org/datastandard/3.0'. List of possible elements expected: 'Event' in namespace 'http://www.orienteering.org/datastandard/3.0'.");
+            iofReader.Errors.Should().NotBeNullOrEmpty();
+            iofReader.Errors.Should().ContainSingle(e => e == "The element 'CourseData' in namespace 'http://www.orienteering.org/datastandard/3.0' has invalid child element 'RaceCourseData' in namespace 'http://www.orienteering.org/datastandard/3.0'. List of possible elements expected: 'Event' in namespace 'http://www.orienteering.org/datastandard/3.0'.");
         }
         finally
         {
