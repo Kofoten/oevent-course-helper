@@ -3,68 +3,46 @@ using System.Xml.Schema;
 
 namespace OEventCourseHelper.Core.Xml.Iof;
 
-public sealed class IOFXmlReader
+public sealed class IOFXmlReader : IDisposable
 {
     private const string XsdResourceName = "OEventCourseHelper.Core.Xml.Iof.IOF.xsd";
 
-    private readonly XmlSchemaSet schemas;
+    private bool disposed = false;
+    private bool consumed = false;
 
-    private IOFXmlReader(XmlSchemaSet schemas)
-    {
-        this.schemas = schemas;
-    }
+    private readonly XmlReader reader;
+    private readonly IXmlNodeReader xmlNodeReader;
+    private readonly List<string> errorCollector;
 
-    /// <summary>
-    /// Tries to read the specified IOF 3.0 Xml file by streaming it using an <see cref="IXmlNodeReader"/> to read and extract specific data from the file.
-    /// </summary>
-    /// <param name="iofXmlPath">The path to the IOF 3.0 Xml file.</param>
-    /// <param name="xmlNodeReader">The node reader to use for reading.</param>
-    /// <param name="errors">Returns any errors that occured while reading the file.</param>
-    /// <returns>True if the file was read without issues; otherwise False.</returns>
-    public bool TryStreamFile(
-        string iofXmlPath,
+    public IReadOnlyList<string> Errors => errorCollector;
+
+    private IOFXmlReader(
+        XmlReader reader,
         IXmlNodeReader xmlNodeReader,
-        out List<string> errors)
+        List<string> errorCollector)
     {
-        if (!File.Exists(iofXmlPath))
-        {
-            errors = [$"The file '{iofXmlPath}' could not be found."];
-            return false;
-        }
-
-        errors = [];
-        xmlNodeReader.OnValidationError = errors.Add;
-        var readerSettings = CreateXmlReaderSettings(errors);
-        using var reader = XmlReader.Create(iofXmlPath, readerSettings);
-
-        StreamInternal(reader, xmlNodeReader);
-        return errors.Count == 0;
+        this.reader = reader;
+        this.xmlNodeReader = xmlNodeReader;
+        this.errorCollector = errorCollector;
     }
 
     /// <summary>
     /// Tries to read the specified IOF 3.0 Xml content by streaming it using an <see cref="IXmlNodeReader"/> to read and extract specific data from the file.
     /// </summary>
-    /// <param name="iofXmlContent">The IOF 3.0 Xml content to parse.</param>
-    /// <param name="xmlNodeReader">The node reader to use for reading.</param>
-    /// <param name="errors">Returns any errors that occured while reading the file.</param>
+    /// <remarks>
+    /// If any errors occured during the parsing they can be found in <see cref="Errors"/>
+    /// </remarks>
     /// <returns>True if the file was read without issues; otherwise False.</returns>
-    public bool TryStreamString(
-        string iofXmlContent,
-        IXmlNodeReader xmlNodeReader,
-        out List<string> errors)
+    /// <exception cref="InvalidOperationException">If trying to call <see cref="TryStream"/> twice.</exception>
+    public bool TryStream()
     {
-        errors = [];
-        xmlNodeReader.OnValidationError = errors.Add;
-        var readerSettings = CreateXmlReaderSettings(errors);
-        using var sr = new StringReader(iofXmlContent);
-        using var reader = XmlReader.Create(sr, readerSettings);
+        if (consumed)
+        {
+            throw new InvalidOperationException("The reader is consumed");
+        }
 
-        StreamInternal(reader, xmlNodeReader);
-        return errors.Count == 0;
-    }
+        consumed = true;
 
-    private static void StreamInternal(XmlReader reader, IXmlNodeReader xmlNodeReader)
-    {
         while (reader.Read())
         {
             if (xmlNodeReader.CanRead(reader))
@@ -72,34 +50,35 @@ public sealed class IOFXmlReader
                 xmlNodeReader.Read(reader);
             }
         }
-    }
 
-    private XmlReaderSettings CreateXmlReaderSettings(List<string> validationMessageCollector)
-    {
-        var settings = new XmlReaderSettings
-        {
-            Schemas = schemas,
-            ValidationType = ValidationType.Schema,
-            ValidationFlags = XmlSchemaValidationFlags.ProcessInlineSchema
-                            | XmlSchemaValidationFlags.ReportValidationWarnings
-                            | XmlSchemaValidationFlags.ProcessIdentityConstraints,
-        };
-
-        settings.ValidationEventHandler += (sender, e) =>
-        {
-            validationMessageCollector.Add(e.Message);
-        };
-
-        return settings;
+        return errorCollector.Count == 0;
     }
 
     /// <summary>
-    /// Creates a new instance of <see cref="IOFXmlReader"/> pre loaded with the schema file for IOF 3.0 Xml files. This instance is reusable.
+    /// Creates a new instance of <see cref="IOFXmlReader"/> pre loaded with the schema file for IOF 3.0 Xml files.
     /// </summary>
     /// <returns>A new instance of <see cref="IOFXmlReader"/></returns>
+    /// <param name="stream">The stream to read.</param>
+    /// <param name="xmlNodeReader">The node reader to use for parsing.</param>
     /// <exception cref="InvalidOperationException"></exception>
     /// <exception cref="AggregateException"></exception>
-    public static IOFXmlReader Create()
+    public static IOFXmlReader Create(Stream stream, IXmlNodeReader xmlNodeReader)
+    {
+        var errorCollector = new List<string>();
+        var settings = CreateXmlReaderSettings();
+
+        settings.ValidationEventHandler += (sender, e) =>
+        {
+            errorCollector.Add(e.Message);
+        };
+
+        xmlNodeReader.OnValidationError = errorCollector.Add;
+
+        var reader = XmlReader.Create(stream, settings);
+        return new IOFXmlReader(reader, xmlNodeReader, errorCollector);
+    }
+
+    private static XmlReaderSettings CreateXmlReaderSettings()
     {
         var xsdErrors = new List<XmlSchemaException>();
         using var xsdStream = typeof(IOFXmlReader).Assembly
@@ -125,6 +104,24 @@ public sealed class IOFXmlReader
         var schemas = new XmlSchemaSet();
         schemas.Add(schema);
 
-        return new IOFXmlReader(schemas);
+        var settings = new XmlReaderSettings
+        {
+            Schemas = schemas,
+            ValidationType = ValidationType.Schema,
+            ValidationFlags = XmlSchemaValidationFlags.ProcessInlineSchema
+                            | XmlSchemaValidationFlags.ReportValidationWarnings
+                            | XmlSchemaValidationFlags.ProcessIdentityConstraints,
+        };
+
+        return settings;
+    }
+
+    public void Dispose()
+    {
+        if (!disposed)
+        {
+            reader.Dispose();
+            disposed = true;
+        }
     }
 }

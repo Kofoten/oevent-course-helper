@@ -17,20 +17,22 @@ public class IOFXmlReaderTests
             </CourseData>
             """;
 
+        var dummyNodeReader = new DummyXmlNodeReader();
         var tempFile = Path.GetTempFileName();
+
         try
         {
             File.WriteAllText(tempFile, invalidXml);
-            var reader = IOFXmlReader.Create();
-            var dummyNodeReader = new DummyXmlNodeReader();
+            using var stream = File.OpenRead(tempFile);
+            using var iofReader = IOFXmlReader.Create(stream, dummyNodeReader);
 
             // Act
-            var success = reader.TryStreamFile(tempFile, dummyNodeReader, out var errors);
+            var success = iofReader.TryStream();
 
             // Assert
             success.Should().BeFalse();
-            errors.Should().NotBeNullOrEmpty();
-            errors.Should().Contain(e => e.Contains("Event"));
+            iofReader.Errors.Should().NotBeNullOrEmpty();
+            iofReader.Errors.Should().Contain(e => e.Contains("Event"));
         }
         finally
         {
