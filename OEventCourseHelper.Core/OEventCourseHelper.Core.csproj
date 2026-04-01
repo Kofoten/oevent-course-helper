@@ -10,11 +10,15 @@
 	<Authors>Rasmus Steen</Authors>
 	<Description>High-performance bitmask solver and IOF XML parser for orienteering courses.</Description>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
-	<RepositoryUrl>https://github.com/Kofoten/OEventCourseHelper</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/Kofoten/oevent-course-helper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Kofoten/oevent-course-helper</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
   <ItemGroup>
