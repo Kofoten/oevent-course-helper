@@ -1,7 +1,7 @@
 ﻿using OEventCourseHelper.Core.Data;
 using System.Collections.Immutable;
 
-namespace OEventCourseHelper.Core.CoursePrioritizer;
+namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
 /// <summary>
 /// A context to hold data computed by the pre-processing step.
@@ -14,7 +14,7 @@ namespace OEventCourseHelper.Core.CoursePrioritizer;
 /// <param name="ControlRarityLookup">The lookup of the rarity of a specific control.</param>
 /// <param name="DominatedCoursesMask">A <see cref="BitMask"/> covering the indicies of all dominated courses.</param>
 /// <param name="CourseInvertedIndex">An inverted index containg a <see cref="BitMask"/> containing the indicies of each course covering a specific control.</param>
-public record BeamSearchSolverContext(
+internal record BeamSearchSolverContext(
     BitMask TargetControlsMask,
     ulong TotalControlRaritySum,
     int ControlMaskBucketCount,

@@ -2,7 +2,7 @@
 
 namespace OEventCourseHelper.Core.CoursePrioritizer.IO;
 
-public class CourseFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
+internal class CourseFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
 {
     /// <summary>
     /// Checks if <paramref name="course"/> matches the filter.

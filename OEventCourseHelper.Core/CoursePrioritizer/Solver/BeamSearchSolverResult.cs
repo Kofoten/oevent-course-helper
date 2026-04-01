@@ -2,12 +2,12 @@
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
-namespace OEventCourseHelper.Core.CoursePrioritizer;
+namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
 /// <summary>
 /// An object containing the result of the solver.
 /// </summary>
-public record BeamSearchSolverResult
+internal record BeamSearchSolverResult
 {
     [MemberNotNullWhen(true, nameof(CourseMask), nameof(PriorityOrder))]
     public bool Success { get; init; }
