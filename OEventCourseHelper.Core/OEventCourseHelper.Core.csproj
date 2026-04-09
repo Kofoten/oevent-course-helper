@@ -4,7 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-
+    <IsAotCompatible>true</IsAotCompatible>
+    <IsTrimmable>true</IsTrimmable>
 	<IsPackable>true</IsPackable>
 	<PackageId>OEventCourseHelper.Core</PackageId>
 	<Authors>Rasmus Steen</Authors>
