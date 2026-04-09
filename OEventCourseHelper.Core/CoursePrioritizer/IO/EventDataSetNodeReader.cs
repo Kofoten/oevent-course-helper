@@ -2,7 +2,6 @@
 using OEventCourseHelper.Core.Xml;
 using System.Collections.Immutable;
 using System.Xml;
-using System.Xml.Serialization;
 
 namespace OEventCourseHelper.Core.CoursePrioritizer.IO;
 
@@ -17,20 +16,6 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     private const string ControlElementSchemaType = "Control";
     private const string CourseElementName = "Course";
     private const string CourseElementSchemaType = "Course";
-
-    private static readonly XmlSerializer controlSerializer = new(
-        typeof(IOF.Xml.Control),
-        new XmlRootAttribute(ControlElementName)
-        {
-            Namespace = Namespace,
-        });
-
-    private static readonly XmlSerializer courseSerializer = new(
-        typeof(IOF.Xml.Course),
-        new XmlRootAttribute(CourseElementName)
-        {
-            Namespace = Namespace
-        });
 
     private ReaderState state = ReaderState.ReadControls;
     private readonly Dictionary<string, int> controlIndexer = [];
@@ -101,57 +86,82 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
 
     private void ReadControl(XmlReader reader)
     {
-        using var subReader = reader.ReadSubtree();
-        var deserializedObject = controlSerializer.Deserialize(subReader);
-
-        if (deserializedObject is IOF.Xml.Control iofControl)
+        var typeAddr = reader.GetAttribute("type");
+        if (typeAddr is not null && typeAddr != "Control")
         {
-            if (iofControl.type != IOF.Xml.ControlType.Control)
-            {
-                return;
-            }
+            return;
+        }
 
-            controlIndexer.TryAdd(iofControl.Id.Value, -1);
+        using var subReader = reader.ReadSubtree();
+        while (subReader.Read())
+        {
+            if (subReader.NodeType == XmlNodeType.Element && subReader.LocalName == "Id")
+            {
+                var id = subReader.ReadElementContentAsString();
+                controlIndexer.Add(id, -1);
+                break;
+            }
         }
     }
 
     private void ReadCourse(XmlReader reader)
     {
         using var subReader = reader.ReadSubtree();
-        var deserializedObject = courseSerializer.Deserialize(subReader);
 
-        if (deserializedObject is IOF.Xml.Course iofCourse)
+        string? courseName = null;
+        var controlCount = 0;
+        var builder = new BitMask.Builder(BitMask.GetBucketCount(controlIndexer.Count));
+
+        while (subReader.Read())
         {
-            var controlCount = 0;
-            var builder = new BitMask.Builder(BitMask.GetBucketCount(controlIndexer.Count));
-            foreach (var courseControl in iofCourse.CourseControl)
+            if (subReader.NodeType != XmlNodeType.Element)
             {
-                if (courseControl.type != IOF.Xml.ControlType.Control)
-                {
-                    continue;
-                }
-
-                if (courseControl.Control is null)
-                {
-                    continue;
-                }
-
-                foreach (var controlCode in courseControl.Control)
-                {
-                    if (!controlIndexer.TryGetValue(controlCode, out var index))
-                    {
-                        OnValidationError?.Invoke($"Validation Error: Course '{iofCourse.Name}' references undefined control '{controlCode}'.");
-                        return;
-                    }
-
-                    if (builder.Set(index))
-                    {
-                        controlCount++;
-                    }
-                }
+                continue;
             }
 
-            var course = new Course(-1, iofCourse.Name, builder.ToBitMask(), controlCount);
+            switch (subReader.LocalName)
+            {
+                case "Name":
+                    courseName = subReader.ReadElementContentAsString();
+                    break;
+                case "CourseControl":
+                    {
+                        var typeAttr = subReader.GetAttribute("type");
+                        if (typeAttr is not null && typeAttr != "Control")
+                        {
+                            continue;
+                        }
+
+                        using var ccReader = subReader.ReadSubtree();
+                        while (ccReader.Read())
+                        {
+                            if (ccReader.NodeType != XmlNodeType.Element || ccReader.LocalName != "Control")
+                            {
+                                continue;
+                            }
+
+                            var controlCode = ccReader.ReadElementContentAsString();
+                            if (!controlIndexer.TryGetValue(controlCode, out var index))
+                            {
+                                OnValidationError?.Invoke($"Validation Error: Course '{courseName}' references undefined control '{controlCode}'.");
+                                return;
+                            }
+
+                            if (builder.Set(index))
+                            {
+                                controlCount++;
+                            }
+                        }
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (courseName is not null)
+        {
+            var course = new Course(-1, courseName, builder.ToBitMask(), controlCount);
             if (Filter.Matches(course))
             {
                 courseAccumulator.Add(course);
