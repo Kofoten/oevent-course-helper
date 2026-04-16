@@ -85,9 +85,13 @@ internal class BeamSearchSolver(int BeamWidth)
                     for (int i = 0; i < context.CourseMaskBucketCount; i++)
                     {
                         validCoursesMaskWorkspace.OrBucketAt(i, coursesWithControl);
-                        validCoursesMaskWorkspace.AndNotBucketAt(i, context.DominatedCoursesMask);
-                        validCoursesMaskWorkspace.AndNotBucketAt(i, candidate.IncludedCoursesMask);
                     }
+                }
+
+                for (int i = 0; i < context.CourseMaskBucketCount; i++)
+                {
+                    validCoursesMaskWorkspace.AndNotBucketAt(i, context.DominatedCoursesMask);
+                    validCoursesMaskWorkspace.AndNotBucketAt(i, candidate.IncludedCoursesMask);
                 }
 
                 foreach (var courseIndex in validCoursesMaskWorkspace)

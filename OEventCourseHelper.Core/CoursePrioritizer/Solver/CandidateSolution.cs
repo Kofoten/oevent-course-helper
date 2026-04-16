@@ -31,7 +31,7 @@ internal record CandidateSolution(
     public static CandidateSolution Initial(BeamSearchSolverContext context)
     {
         var unvisitedControlMask = new BitMask(context.TargetControlsMask.Buckets);
-        var includedCoursesMask = BitMask.Zero(context.CourseMaskBucketCount);
+        var includedCoursesMask = BitMask.Zero(context.Courses.Length);
         return new([], includedCoursesMask, unvisitedControlMask, context.TotalControlRaritySum);
     }
 
