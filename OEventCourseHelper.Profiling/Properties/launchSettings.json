@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OEventCourseHelper.Profiling": {
+      "commandName": "Project",
+      "commandLineArgs": "1"
+    }
+  }
+}

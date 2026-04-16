@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Core.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.TestUtilities", "OEventCourseHelper.TestUtilities\OEventCourseHelper.TestUtilities.csproj", "{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Profiling", "OEventCourseHelper.Profiling\OEventCourseHelper.Profiling.csproj", "{41322DB2-D140-4C5E-AF73-5897192E8BEF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -70,6 +72,10 @@ Global
 		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3C1D7815-FBAA-49DB-A1ED-0D42EB9522D2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41322DB2-D140-4C5E-AF73-5897192E8BEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41322DB2-D140-4C5E-AF73-5897192E8BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41322DB2-D140-4C5E-AF73-5897192E8BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41322DB2-D140-4C5E-AF73-5897192E8BEF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

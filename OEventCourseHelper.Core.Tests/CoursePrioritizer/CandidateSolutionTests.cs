@@ -22,7 +22,7 @@ public class CandidateSolutionTests
             controlRarityLookup.Aggregate(0UL, (acc, x) => acc + x),
             2,
             1,
-            [],
+            [new Course(0, "The Course", new([0b0UL, 0b1UL]), 1)],
             controlRarityLookup,
             new([]),
             []);
