@@ -63,13 +63,13 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>The required courses ordered by their respective priority.</returns>
     private PerformResult? PerformBeamSearch(BeamSearchSolverContext context)
     {
+        var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer, tieBreakComparer);
         var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
-        ImmutableList<CandidateSolution> beam = [initialSolution];
+        ImmutableArray<CandidateSolution> beam = [initialSolution];
 
-        while (beam.Count > 0)
+        while (beam.Length > 0)
         {
-            var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer, tieBreakComparer);
 
             foreach (var candidate in beam)
             {
@@ -105,7 +105,11 @@ internal class BeamSearchSolver(int BeamWidth)
                     }
 
                     var projectedScore = candidate.RarityScore - rarityGain;
-                    if (beamBuilder.IsFull && projectedScore >= beamBuilder.Worst.RarityScore)
+                    if (beamBuilder.IsFull
+                        &&
+                        beamBuilder.Worst.HasValue
+                        &&
+                        projectedScore >= beamBuilder.Worst.Value.RarityScore)
                     {
                         continue;
                     }
@@ -117,14 +121,14 @@ internal class BeamSearchSolver(int BeamWidth)
                 validCoursesMaskWorkspace.Clear();
             }
 
-            beam = beamBuilder.ToImmutableList(x => x.Materialize());
-            if (beam.Count > 0 && beam[0].IsComplete)
+            beam = beamBuilder.ConsumeToImmutableAndReset(x => x.Materialize());
+            if (beam.Length > 0 && beam[0].IsComplete)
             {
                 break;
             }
         }
 
-        if (beam.Count == 0)
+        if (beam.Length == 0)
         {
             return null;
         }
@@ -271,12 +275,13 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <param name="comparer">The comparere to use.</param>
     /// <param name="tieBreaker">The comparer used to resolve tie breaks.</param>
     private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer, IComparer<T>? tieBreaker = null)
+        where T : struct
     {
-        private readonly List<T> beam = new(BeamWidth);
+        private readonly T[] beam = new T[BeamWidth];
 
-        public int Count => beam.Count;
+        public int Count { get; private set; } = 0;
 
-        public bool IsFull => beam.Count == BeamWidth;
+        public bool IsFull => Count == BeamWidth;
 
         /// <summary>
         /// Inserts or discards an item.
@@ -285,7 +290,7 @@ internal class BeamSearchSolver(int BeamWidth)
         /// <returns>True if the item was keept; otherwise False.</returns>
         public bool InsertOrDiscard(T item)
         {
-            int index = beam.BinarySearch(item, comparer);
+            int index = Array.BinarySearch(beam, 0, Count, item, comparer);
             if (index >= 0)
             {
                 if (tieBreaker is not null
@@ -302,13 +307,17 @@ internal class BeamSearchSolver(int BeamWidth)
             index = ~index;
             if (index < BeamWidth)
             {
-                beam.Insert(index, item);
-
-                if (beam.Count > BeamWidth)
+                var itemsToShift = Math.Min(Count, BeamWidth - 1) - index;
+                if (itemsToShift > 0)
                 {
-                    beam.RemoveAt(BeamWidth);
+                    Array.Copy(beam, index, beam, index + 1, itemsToShift);
                 }
 
+                beam[index] = item;
+                if (Count < BeamWidth)
+                {
+                    Count++;
+                }
                 return true;
             }
 
@@ -318,25 +327,22 @@ internal class BeamSearchSolver(int BeamWidth)
         /// <summary>
         /// Gets the currently worst item.
         /// </summary>
-        public T? Worst => beam.Count > 0 ? beam[^1] : default;
+        public T? Worst => beam.Length > 0 ? beam[Count - 1] : default;
 
         /// <summary>
         /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
         /// </summary>
-        public ImmutableList<T> ToImmutableList() => [.. beam];
-
-        /// <summary>
-        /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
-        /// </summary>
-        public ImmutableList<TResult> ToImmutableList<TResult>(Func<T, TResult> selector)
+        public ImmutableArray<TResult> ConsumeToImmutableAndReset<TResult>(Func<T, TResult> selector)
         {
-            var resultBuilder = ImmutableList.CreateBuilder<TResult>();
-            foreach (var item in beam)
+            var resultBuilder = ImmutableArray.CreateBuilder<TResult>();
+            for (int i = 0; i < Count; i++)
             {
-                resultBuilder.Add(selector(item));
+                resultBuilder.Add(selector(beam[i]));
+                beam[i] = default;
             }
 
-            return resultBuilder.ToImmutableList();
+            Count = 0;
+            return resultBuilder.ToImmutableArray();
         }
     }
 
