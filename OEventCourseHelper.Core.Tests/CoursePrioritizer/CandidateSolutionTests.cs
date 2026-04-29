@@ -25,7 +25,7 @@ public class CandidateSolutionTests
             [new Course(0, "The Course", new([0b0UL, 0b1UL]), 1)],
             controlRarityLookup,
             new([]),
-            []);
+            new([]));
 
         // Act
         var actual = CandidateSolution.Initial(context);
