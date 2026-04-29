@@ -94,6 +94,14 @@ public readonly record struct BitMask : IEquatable<BitMask>
     }
 
     /// <summary>
+    /// Gets a slice of ulong buckets from the <see cref="BitMask"/>.
+    /// </summary>
+    /// <param name="startBucket">The index of the first bucket of the slice.</param>
+    /// <param name="bucketCount">The number of buckets contained in the slice.</param>
+    /// <returns>A <see cref="ReadOnlySpan{ulong}"/> containing the sliced buckets.</returns>
+    public ReadOnlySpan<ulong> Slice(int startBucket, int bucketCount) => Buckets.AsSpan(startBucket, bucketCount);
+
+    /// <summary>
     /// Calculates the number of buckets required to hold the specified amount of bits.
     /// </summary>
     /// <param name="bitCount">The number of bits to be stored.</param>
@@ -465,7 +473,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
         /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void AndBucketAt(int bucketIndex, BitMask other)
+        public void AndBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndBucketAt));
             BitOps.AndBucketAt(buckets, bucketIndex, other);
@@ -479,7 +487,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
         /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void AndNotBucketAt(int bucketIndex, BitMask other)
+        public void AndNotBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndNotBucketAt));
             BitOps.AndNotBucketAt(buckets, bucketIndex, other);
@@ -493,7 +501,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
         /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
         /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
         /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void OrBucketAt(int bucketIndex, BitMask other)
+        public void OrBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
         {
             BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(OrBucketAt));
             BitOps.OrBucketAt(buckets, bucketIndex, other);
