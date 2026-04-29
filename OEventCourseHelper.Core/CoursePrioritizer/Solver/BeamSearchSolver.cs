@@ -70,7 +70,6 @@ internal class BeamSearchSolver(int BeamWidth)
 
         while (beam.Length > 0)
         {
-
             foreach (var candidate in beam)
             {
                 if (candidate.IsComplete)
@@ -327,14 +326,14 @@ internal class BeamSearchSolver(int BeamWidth)
         /// <summary>
         /// Gets the currently worst item.
         /// </summary>
-        public T? Worst => beam.Length > 0 ? beam[Count - 1] : default;
+        public T? Worst => Count > 0 ? beam[Count - 1] : default;
 
         /// <summary>
         /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
         /// </summary>
         public ImmutableArray<TResult> ConsumeToImmutableAndReset<TResult>(Func<T, TResult> selector)
         {
-            var resultBuilder = ImmutableArray.CreateBuilder<TResult>();
+            var resultBuilder = ImmutableArray.CreateBuilder<TResult>(Count);
             for (int i = 0; i < Count; i++)
             {
                 resultBuilder.Add(selector(beam[i]));
@@ -342,7 +341,7 @@ internal class BeamSearchSolver(int BeamWidth)
             }
 
             Count = 0;
-            return resultBuilder.ToImmutableArray();
+            return resultBuilder.MoveToImmutable();
         }
     }
 
