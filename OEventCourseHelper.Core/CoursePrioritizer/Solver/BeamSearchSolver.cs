@@ -63,7 +63,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>The required courses ordered by their respective priority.</returns>
     private PerformResult? PerformBeamSearch(BeamSearchSolverContext context)
     {
-        var beamBuilder = new BeamBuilder<CandidateBlueprint>(BeamWidth, candidateComparer, tieBreakComparer);
+        var beamBuilder = new BeamBuilder(BeamWidth, candidateComparer, tieBreakComparer);
         var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
         ImmutableArray<CandidateSolution> beam = [initialSolution];
@@ -106,9 +106,7 @@ internal class BeamSearchSolver(int BeamWidth)
                     var projectedScore = candidate.RarityScore - rarityGain;
                     if (beamBuilder.IsFull
                         &&
-                        beamBuilder.Worst.HasValue
-                        &&
-                        projectedScore >= beamBuilder.Worst.Value.RarityScore)
+                        projectedScore >= beamBuilder.Worst.RarityScore)
                     {
                         continue;
                     }
@@ -120,7 +118,7 @@ internal class BeamSearchSolver(int BeamWidth)
                 validCoursesMaskWorkspace.Clear();
             }
 
-            beam = beamBuilder.ConsumeToImmutableAndReset(x => x.Materialize());
+            beam = beamBuilder.MaterializeAndReset();
             if (beam.Length > 0 && beam[0].IsComplete)
             {
                 break;
@@ -266,37 +264,35 @@ internal class BeamSearchSolver(int BeamWidth)
     }
 
     /// <summary>
-    /// A custom priority queue which limits the amount of items to <paramref name="BeamWidth"/> and
-    /// ensures only the best <typeparamref name="T"/> are kept by using <paramref name="comparer"/>.
+    /// A custom priority queue which limits the amount of blueprints to <paramref name="BeamWidth"/> and
+    /// ensures only the best <see cref="CandidateBlueprint"/> are kept by using <paramref name="comparer"/>.
     /// </summary>
-    /// <typeparam name="T">The item type.</typeparam>
     /// <param name="BeamWidth">The maximum width of the beam.</param>
     /// <param name="comparer">The comparere to use.</param>
     /// <param name="tieBreaker">The comparer used to resolve tie breaks.</param>
-    private class BeamBuilder<T>(int BeamWidth, IComparer<T> comparer, IComparer<T>? tieBreaker = null)
-        where T : struct
+    private class BeamBuilder(int BeamWidth, IComparer<CandidateBlueprint> comparer, IComparer<CandidateBlueprint>? tieBreaker = null)
     {
-        private readonly T[] beam = new T[BeamWidth];
+        private readonly CandidateBlueprint[] beam = new CandidateBlueprint[BeamWidth];
 
         public int Count { get; private set; } = 0;
 
         public bool IsFull => Count == BeamWidth;
 
         /// <summary>
-        /// Inserts or discards an item.
+        /// Inserts or discards an blueprint.
         /// </summary>
-        /// <param name="item">The item to insert.</param>
-        /// <returns>True if the item was keept; otherwise False.</returns>
-        public bool InsertOrDiscard(T item)
+        /// <param name="blueprint">The blueprint to insert.</param>
+        /// <returns>True if the blueprint was keept; otherwise False.</returns>
+        public bool InsertOrDiscard(CandidateBlueprint blueprint)
         {
-            int index = Array.BinarySearch(beam, 0, Count, item, comparer);
+            int index = Array.BinarySearch(beam, 0, Count, blueprint, comparer);
             if (index >= 0)
             {
                 if (tieBreaker is not null
                     &&
-                    tieBreaker.Compare(item, beam[index]) < 0)
+                    tieBreaker.Compare(blueprint, beam[index]) < 0)
                 {
-                    beam[index] = item;
+                    beam[index] = blueprint;
                     return true;
                 }
 
@@ -306,13 +302,13 @@ internal class BeamSearchSolver(int BeamWidth)
             index = ~index;
             if (index < BeamWidth)
             {
-                var itemsToShift = Math.Min(Count, BeamWidth - 1) - index;
-                if (itemsToShift > 0)
+                var blueprintsToShift = Math.Min(Count, BeamWidth - 1) - index;
+                if (blueprintsToShift > 0)
                 {
-                    Array.Copy(beam, index, beam, index + 1, itemsToShift);
+                    Array.Copy(beam, index, beam, index + 1, blueprintsToShift);
                 }
 
-                beam[index] = item;
+                beam[index] = blueprint;
                 if (Count < BeamWidth)
                 {
                     Count++;
@@ -324,19 +320,20 @@ internal class BeamSearchSolver(int BeamWidth)
         }
 
         /// <summary>
-        /// Gets the currently worst item.
+        /// Gets the currently worst <see cref="CandidateBlueprint"/>.
         /// </summary>
-        public T? Worst => Count > 0 ? beam[Count - 1] : default;
+        public CandidateBlueprint Worst => Count > 0 ? beam[Count - 1] : default;
 
         /// <summary>
-        /// Creates an <see cref="ImmutableList{T}"/> of the items currenly in the builder.
+        /// Creates an <see cref="ImmutableArray"/> containing the materialized <see cref="CandidateSolution"/>
+        /// from the blueprints currenly in the builder, then resets the builder.
         /// </summary>
-        public ImmutableArray<TResult> ConsumeToImmutableAndReset<TResult>(Func<T, TResult> selector)
+        public ImmutableArray<CandidateSolution> MaterializeAndReset()
         {
-            var resultBuilder = ImmutableArray.CreateBuilder<TResult>(Count);
+            var resultBuilder = ImmutableArray.CreateBuilder<CandidateSolution>(Count);
             for (int i = 0; i < Count; i++)
             {
-                resultBuilder.Add(selector(beam[i]));
+                resultBuilder.Add(beam[i].Materialize());
                 beam[i] = default;
             }
 
