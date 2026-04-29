@@ -6,7 +6,11 @@ Currently, its flagship feature solves a complex set cover problem: determining 
 
 ## 🏗️ The 7 Design Principles
 
-This codebase is governed by seven strict design "commandments" to ensure robustness, speed, and quality:
+This codebase started out solving the problem via brute force using `HashSet` and `Dictionary` collections because I needed to solve a real-world logistics problem in a single day. It is written in C# because that is what I'm most comfortable writing to get things done.
+
+However, once the domain logic was proven, the focus shifted entirely to systems engineering: **proving that managed C# does not have to be slow**.
+
+To achieve the current execution times, this codebase is governed by seven strict design "commandments." These ensure robustness, speed, and quality, and are strictly listed in order of importance:
 
 1. **Algorithmic Elegance over Brute Force:** No parallelization. Problems are solved intelligently through advanced heuristics and algorithms rather than relying on raw compute power.
 2. **Strict Immutability:** State is read-only by default. Everything outside of an immediate working set is strictly immutable.
@@ -99,7 +103,9 @@ When running with `--porcelain`, you can reliably parse these event IDs:
 
 ## 📥 Installation
 
-To run this tool, you must have the **.NET 8 Runtime** installed on your system. You do not need the full .NET SDK, but the executables are explicitly *not* published as self-contained binaries.
+To run this tool, you must have the **.NET 10 Runtime** installed on your system. You do not need the full .NET SDK, but the executables are explicitly *not* published as self-contained binaries.
+
+I do not ship this as a self-contained blob because I refuse to deal with the legalities of redistributing Microsoft's proprietary runtime binaries (even if the risk is practically zero). Furthermore, I do not publish Native AOT binaries because profiling has proven that the JIT compiler's Dynamic PGO actually outperforms AOT static compilation on large datasets.
 
 1. Navigate to the **Releases** page of this repository.
 2. Download the `.zip` file matching your operating system (`win-x64`, `win-x86`, or `linux-x64`).
@@ -107,7 +113,7 @@ To run this tool, you must have the **.NET 8 Runtime** installed on your system.
 
 ## 🤖 CI/CD & Automation
 
-This project is built with standard .NET 8 tooling and is designed to be highly testable (Commandment #6). The repository utilizes GitHub Actions (via self-hosted Actions Runner Controller Kubernetes pods) for continuous integration and deployment.
+This project is built with standard .NET 10 tooling and is designed to be highly testable (Commandment #6). The repository utilizes GitHub Actions (via self-hosted Actions Runner Controller Kubernetes pods) for continuous integration and deployment.
 
 - **Testing:** Every push and pull request to the `main` branch automatically triggers the `xUnit` and `FluentAssertions` test suite, alongside strict license validation.
 - **Releases:** Creating a new GitHub Release is fully automated. Pushing a semantic version tag (e.g., `v1.0.4`) to the `main` branch triggers the release workflow. This workflow compiles the standalone binaries, generates a `ThirdPartyNotices.txt` file using the custom internal generator, and publishes the artifacts directly to the GitHub Releases page.
