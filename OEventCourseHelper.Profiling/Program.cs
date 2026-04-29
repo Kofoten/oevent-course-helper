@@ -10,13 +10,30 @@ using System.Security.Cryptography;
 byte[] seed = [123, 89, 244, 187, 31, 210, 174, 50];
 var watch = new Stopwatch();
 var beamWidth = 20;
-var courseCount = 5000;
+var courseCount = 5_000;
 var controlCount = 100_032;
-var controlBucketCount = controlCount >> 6;
 
 if (args.Length > 0 && int.TryParse(args[0], out var beamWidthArgValue))
 {
     beamWidth = beamWidthArgValue;
+}
+
+if (args.Length > 1 && int.TryParse(args[1], out var courseCountArgValue))
+{
+    courseCount = courseCountArgValue;
+}
+
+if (args.Length > 2 && int.TryParse(args[2], out var controlCountArgValue))
+{
+    controlCount = controlCountArgValue;
+}
+
+var controlBucketCount = BitMask.GetBucketCount(controlCount);
+var remainder = controlCount % 64;
+var lastBucketMask = ulong.MaxValue;
+if (remainder > 0)
+{
+    lastBucketMask >>= 64 - remainder;
 }
 
 Console.WriteLine("Generating data set...");
@@ -42,6 +59,8 @@ using (var hmac = new HMACSHA256(seed))
                 var bucket = BinaryPrimitives.ReadUInt64LittleEndian(bytes);
                 courseControls[j] = bucket;
             }
+
+            courseControls[controlBucketCount - 1] &= lastBucketMask;
 
             var mask = new BitMask([.. courseControls]);
             return new Course(i, $"Course {i}", mask, mask.PopCount);
