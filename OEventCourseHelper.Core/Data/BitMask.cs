@@ -234,6 +234,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
         /// Move to the index of the next set bit.
         /// </summary>
         /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             while (currentBucket == 0UL)
@@ -314,6 +315,12 @@ public readonly record struct BitMask : IEquatable<BitMask>
             var requiredBucketCount = BitOps.GetBucketCount(index + 1);
             ReziseIfRequired(requiredBucketCount);
             return BitOps.Set(buckets, index);
+        }
+
+        public void SetBucket(BucketMask bucketMask)
+        {
+            ReziseIfRequired(bucketMask.BucketIndex + 1);
+            buckets[bucketMask.BucketIndex] |= bucketMask.BucketValue;
         }
 
         /// <summary>

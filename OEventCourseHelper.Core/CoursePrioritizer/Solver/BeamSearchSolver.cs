@@ -145,29 +145,36 @@ internal class BeamSearchSolver(int BeamWidth)
         var courseMaskBucketCount = BitMask.GetBucketCount(dataSet.Courses.Length);
         var controlFrequencies = new ulong[dataSet.Controls.Length];
         var courseInvertedIndexBuilder = new BitMask.Builder(dataSet.Controls.Length * courseMaskBucketCount);
-        foreach (var course in dataSet.Courses)
+
+        for (int i = 0; i < dataSet.Courses.Length; i++)
         {
+            var course = dataSet.Courses[i];
+            var courseBucketMask = BitMask.BucketMask.FromBitIndex(i);
+
             foreach (var controlIndex in course.ControlMask)
             {
                 controlFrequencies[controlIndex]++;
-                var invertedIndexStart = (controlIndex * courseMaskBucketCount) << 6;
-                courseInvertedIndexBuilder.Set(invertedIndexStart + course.CourseIndex);
+
+                var baseBucketIndex = controlIndex * courseMaskBucketCount;
+                var targetBucketMask = new BitMask.BucketMask(baseBucketIndex + courseBucketMask.BucketIndex, courseBucketMask.BucketValue);
+                courseInvertedIndexBuilder.SetBucket(targetBucketMask);
             }
         }
 
         var totalControlRaritySum = 0UL;
-        var targetControlsMaskBuilder = new BitMask.Builder(controlMaskBucketCount);
         var controlRarityLookup = new ulong[dataSet.Controls.Length];
+        var targetControlsMaskBuilder = new BitMask.Builder(controlMaskBucketCount);
         for (int i = 0; i < dataSet.Controls.Length; i++)
         {
-            if (controlFrequencies[i] == 0)
+            var frequency = controlFrequencies[i];
+            if (frequency == 0)
             {
                 controlRarityLookup[i] = 0UL;
             }
             else
             {
                 targetControlsMaskBuilder.Set(i);
-                controlRarityLookup[i] = MaximumRarity / controlFrequencies[i];
+                controlRarityLookup[i] = MaximumRarity / frequency;
                 totalControlRaritySum += controlRarityLookup[i];
             }
         }
