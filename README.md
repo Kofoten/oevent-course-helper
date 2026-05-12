@@ -1,6 +1,6 @@
 # OEvent Course Helper
 
-OEvent Course Helper is an extensible command-line utility designed to assist with real-world logistics and data processing for orienteering events. Built on modern .NET 8 and `Spectre.Console`, it provides a robust foundation for various event management tasks.
+OEvent Course Helper is an extensible command-line utility designed to assist with real-world logistics and data processing for orienteering events. Built on modern .NET 10 and `Spectre.Console`, it provides a robust foundation for various event management tasks.
 
 Currently, its flagship feature solves a complex set cover problem: determining the most efficient order to test-run courses to ensure all control points are physically verified before an event.
 
@@ -55,11 +55,52 @@ OEventCourseHelper prioritize SampleData/Test.Courses.xml -w 5 -f "Long" --stric
 
 The tool uses structured logging with two distinct output formatters:
 
-- **Human-Readable (Spectre)**: The default mode, providing clean console output.
-- **Machine-Readable (Porcelain, v1)**: Activated via the `--porcelain` flag, outputting strict, tab-separated log entries (e.g., `INF:11003|PriorityResult\tpriority="1",courseName="Course 1",required="True"`) designed to be easily parsed by automation scripts.
-  - **Sanitization**: To guarantee a single-line format, Carriage Returns (`\r`) are stripped and Newlines (`\n`) are replaced with a single space.
-  - **Escaping**: Internal double quotes are escaped as `""` per RFC 4180.
-  - **Consistency**: Values are always enclosed in double quotes to ensure reliable parsing.
+### Human-Readable (Spectre)
+
+The default mode, providing clean console output.
+
+### Machine-Readable (Porcelain, v1)
+
+Activated via the `--porcelain` flag it is designed for high-performance parsing. It uses a clear distinction between the metadata (Header) and the payload (Data), separated by a tab character.
+
+#### Protocol Overview
+
+Each entry follows this top-level pattern:  
+`[HEADER]<TAB>[DATA]`
+
+#### The Header Segment
+
+The header contains the routing information and event identification. It is structured as follows:  
+`LEVEL:EVENTID|EVENTNAME`
+
+- **LEVEL**: A 3-character severity indicator.
+
+  | Code | Severity Level |
+  | :--- | :--- |
+  | NON | None / Unknown |
+  | TRC | Trace |
+  | DBG | Debug |
+  | INF | Information |
+  | WRN | Warning |
+  | ERR | Error |
+  | CRT | Critical |
+
+- **EVENTID**: The numeric unique identifier for the event type.
+- **EVENTNAME**: A human-readable string identifying the event logic.
+
+#### The Data Segment
+
+The data segment contains the specific attributes of the log entry, formatted as a comma-separated list of key-value pairs.
+
+- **Structure**: `key1="value1",key2="value2"`
+- **Encapsulation**: All values are strictly enclosed in double quotes.
+- **Sanitization**: Applies to all values.
+  - **Newlines**: `\n` is replaced by a single space and `\r` is stripped completley to ensure each log is a single line.
+  - **Escaping**: Internal double quotes are escaped as `""` (per RFC 4180) to prevent breaking the value boundaries.
+
+#### Example Entry
+
+`INF:11003|PriorityResult\tpriority="1",courseName="Course 1",required="True"`
 
 ## 📋 Exit Codes & Event IDs
 
@@ -87,7 +128,7 @@ When running with `--porcelain`, you can reliably parse these event IDs:
 | ID | Level | Name | Description |
 | :--- | :--- | :--- | :--- |
 | 10000 | Critical | UnhandledException | Logged when an unknown error occurs. |
-| 10001 | Error | FailedToParseArguments | Logged when there invalid arguments are passed |
+| 10001 | Error | FailedToParseArguments | Logged when invalid arguments are passed |
 | 10002 | Error | FailedToLoadFile | Logged when the input file cannot be accessed or loaded. |
 | 10003 | Error | IofSchemaViolation | Logged when the XML file violates the IOF 3.0 schema. |
 
