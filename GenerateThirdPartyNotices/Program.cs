@@ -10,7 +10,7 @@ const string PackageLibraryType = "package";
 
 if (args.Length < 3)
 {
-    Console.WriteLine("Usage: GenerateThirdPartyNotices <input_assets_json> <output_notices_file> <fallback_licence_lookup_directory>");
+    Console.WriteLine("Usage: GenerateThirdPartyNotices <input_assets_json> <output_notices_file> <fallback_license_lookup_directory>");
     return 1;
 }
 

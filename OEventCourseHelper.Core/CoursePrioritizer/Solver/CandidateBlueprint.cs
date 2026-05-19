@@ -67,7 +67,7 @@ internal readonly struct CandidateBlueprint
     /// <summary>
     /// Comparer that compares blueprints based on their rarity scores. If two blueprints
     /// have the exact same rarity score and the same projected included courses mask they
-    /// are considered equal (they are permutations of eachother).
+    /// are considered equal (they are permutations of each other).
     /// </summary>
     public class RarityComparer : IComparer<CandidateBlueprint>
     {

@@ -24,7 +24,7 @@ internal record CandidateSolution(
 
     /// <summary>
     /// Creates a new instance of <see cref="CandidateSolution"/> with the bits for all controls in the entire
-    /// orienteering event set to one and with the total rarity score of all theese controls summarized togheter.
+    /// orienteering event set to one and with the total rarity score of all these controls summarized together.
     /// </summary>
     /// <param name="context">The context of the current search.</param>
     /// <returns>A new instance of <see cref="CandidateSolution"/>.</returns>

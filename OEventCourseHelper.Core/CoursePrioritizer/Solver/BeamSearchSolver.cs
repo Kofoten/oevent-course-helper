@@ -8,13 +8,13 @@ namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 
 internal class BeamSearchSolver(int BeamWidth)
 {
-    public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precicion as a float.
+    public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precision as a float.
 
     private static readonly CandidateBlueprint.RarityComparer candidateComparer = new();
     private static readonly CandidateBlueprint.TieBreakComparer tieBreakComparer = new();
 
     /// <summary>
-    /// Uses a beam search to priotitize the courses in <paramref name="dataSet"/> and marking the courses
+    /// Uses a beam search to prioritize the courses in <paramref name="dataSet"/> and marking the courses
     /// that are required in order to visit all controls in the orienteering event.
     /// </summary>
     /// <remarks>
