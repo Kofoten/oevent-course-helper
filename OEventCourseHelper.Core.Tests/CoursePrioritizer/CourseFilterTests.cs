@@ -7,7 +7,7 @@ namespace OEventCourseHelper.Core.Tests.CoursePrioritizer;
 public class CourseFilterTests
 {
     [Fact]
-    public void Matches_SouldMatchCourse()
+    public void Matches_ShouldMatchCourse()
     {
         // Setup
         var course = new Course(0, "Course", new([0b1UL]), 1);

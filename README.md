@@ -95,7 +95,7 @@ The data segment contains the specific attributes of the log entry, formatted as
 - **Structure**: `key1="value1",key2="value2"`
 - **Encapsulation**: All values are strictly enclosed in double quotes.
 - **Sanitization**: Applies to all values.
-  - **Newlines**: `\n` is replaced by a single space and `\r` is stripped completley to ensure each log is a single line.
+  - **Newlines**: `\n` is replaced by a single space and `\r` is stripped completely to ensure each log is a single line.
   - **Escaping**: Internal double quotes are escaped as `""` (per RFC 4180) to prevent breaking the value boundaries.
 
 #### Example Entry
