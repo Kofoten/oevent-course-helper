@@ -309,7 +309,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
         {
             if (index < 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), "Index must be a positive integer or zero.");
+                ThrowNegativeIndexArgument(nameof(index));
             }
 
             var requiredBucketCount = BitOps.GetBucketCount(index + 1);
@@ -366,12 +366,12 @@ public readonly record struct BitMask : IEquatable<BitMask>
 
             if (initializedBucketCount == -1)
             {
-                throw new InvalidOperationException("Can not create a bit mask with an unknown bucket count.");
+                ThrowUnknownBucketCount();
             }
 
             if (buckets.Length > initializedBucketCount)
             {
-                throw new InvalidOperationException($"The mask grew to {buckets.Length} buckets, which exceeds the expected {initializedBucketCount}.");
+                ThrowExceedsInitializedBucketCount(buckets.Length, initializedBucketCount);
             }
 
             return ToBitMask(initializedBucketCount);
@@ -439,8 +439,37 @@ public readonly record struct BitMask : IEquatable<BitMask>
         {
             if (IsConsumed)
             {
-                throw new InvalidOperationException("Can not operate on a builder that is consumed.");
+                ThrowIsConsumed();
             }
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowIsConsumed()
+        {
+            throw new InvalidOperationException("Can not operate on a builder that is consumed.");
+        }
+
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowUnknownBucketCount()
+        {
+            throw new InvalidOperationException("Can not create a bit mask with an unknown bucket count.");
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowExceedsInitializedBucketCount(int bucketCount, int initializedBucketCount)
+        {
+            throw new InvalidOperationException($"The mask grew to {bucketCount} buckets, which exceeds the expected {initializedBucketCount}.");
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ThrowNegativeIndexArgument(string argName)
+        {
+            throw new ArgumentOutOfRangeException(argName, "Index must be a positive integer or zero.");
         }
     }
     #endregion
@@ -672,16 +701,16 @@ file static class BitOps
     {
         if (a.Length != b.Length)
         {
-            throw new InvalidOperationException($"Can not perform '{operationName}' on masks with different lengths.");
+            ThrowDifferentLengthException(operationName);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void ThrowIfOutOfBounds(int bucketIndex, ReadOnlySpan<ulong> mask)
     {
-        if (bucketIndex < 0 || bucketIndex >= mask.Length)
+        if ((uint)bucketIndex >= (uint)mask.Length)
         {
-            throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
+            ThrowIndexOutOfRangeException();
         }
     }
 
@@ -689,5 +718,19 @@ file static class BitOps
     private static bool InternalIsSet(ReadOnlySpan<ulong> target, BitMask.BucketMask bucketMask)
     {
         return (target[bucketMask.BucketIndex] & bucketMask.BucketValue) != 0;
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowDifferentLengthException(string operationName)
+    {
+        throw new InvalidOperationException($"Can not perform '{operationName}' on masks with different lengths.");
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowIndexOutOfRangeException()
+    {
+        throw new IndexOutOfRangeException("The index was outside the bounds of the array.");
     }
 }

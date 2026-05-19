@@ -10,9 +10,6 @@ internal class BeamSearchSolver(int BeamWidth)
 {
     public const ulong MaximumRarity = 10000000UL; // 7 zeroes provide similar precision as a float.
 
-    private static readonly CandidateBlueprint.RarityComparer candidateComparer = new();
-    private static readonly CandidateBlueprint.TieBreakComparer tieBreakComparer = new();
-
     /// <summary>
     /// Uses a beam search to prioritize the courses in <paramref name="dataSet"/> and marking the courses
     /// that are required in order to visit all controls in the orienteering event.
@@ -63,7 +60,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <returns>The required courses ordered by their respective priority.</returns>
     private PerformResult? PerformBeamSearch(BeamSearchSolverContext context)
     {
-        var beamBuilder = new BeamBuilder(BeamWidth, candidateComparer, tieBreakComparer);
+        var beamBuilder = new BeamBuilder(BeamWidth);
         var validCoursesMaskWorkspace = new BitMask.Workspace(context.CourseMaskBucketCount);
         var initialSolution = CandidateSolution.Initial(context);
         ImmutableArray<CandidateSolution> beam = [initialSolution];
@@ -263,9 +260,12 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <param name="BeamWidth">The maximum width of the beam.</param>
     /// <param name="comparer">The comparere to use.</param>
     /// <param name="tieBreaker">The comparer used to resolve tie breaks.</param>
-    private class BeamBuilder(int BeamWidth, IComparer<CandidateBlueprint> comparer, IComparer<CandidateBlueprint>? tieBreaker = null)
+    private class BeamBuilder(int BeamWidth)
     {
         private readonly CandidateBlueprint[] beam = new CandidateBlueprint[BeamWidth];
+
+        private readonly CandidateBlueprint.RarityComparer rarityComparer = new();
+        private readonly CandidateBlueprint.TieBreakComparer tieBreakComparer = new();
 
         public int Count { get; private set; } = 0;
 
@@ -278,30 +278,43 @@ internal class BeamSearchSolver(int BeamWidth)
         /// <returns>True if the blueprint was keept; otherwise False.</returns>
         public bool InsertOrDiscard(CandidateBlueprint blueprint)
         {
-            int index = Array.BinarySearch(beam, 0, Count, blueprint, comparer);
-            if (index >= 0)
+            int low = 0;
+            int high = Count - 1;
+            while (low <= high)
             {
-                if (tieBreaker is not null
-                    &&
-                    tieBreaker.Compare(blueprint, beam[index]) < 0)
+                int mid = low + ((high - low) >> 1);
+                int result = rarityComparer.Compare(beam[mid], blueprint);
+
+                if (result == 0)
                 {
-                    beam[index] = blueprint;
-                    return true;
+                    if (tieBreakComparer.Compare(blueprint, beam[mid]) < 0)
+                    {
+                        beam[mid] = blueprint;
+                        return true;
+                    }
+
+                    return false;
                 }
 
-                return false;
+                if (result < 0)
+                {
+                    low = mid + 1;
+                }
+                else
+                {
+                    high = mid - 1;
+                }
             }
 
-            index = ~index;
-            if (index < BeamWidth)
+            if (low < BeamWidth)
             {
-                var blueprintsToShift = Math.Min(Count, BeamWidth - 1) - index;
+                var blueprintsToShift = Math.Min(Count, BeamWidth - 1) - low;
                 if (blueprintsToShift > 0)
                 {
-                    Array.Copy(beam, index, beam, index + 1, blueprintsToShift);
+                    Array.Copy(beam, low, beam, low + 1, blueprintsToShift);
                 }
 
-                beam[index] = blueprint;
+                beam[low] = blueprint;
                 if (Count < BeamWidth)
                 {
                     Count++;
