@@ -69,7 +69,7 @@ internal readonly struct CandidateBlueprint
     /// have the exact same rarity score and the same projected included courses mask they
     /// are considered equal (they are permutations of each other).
     /// </summary>
-    public class RarityComparer : IComparer<CandidateBlueprint>
+    public readonly struct RarityComparer : IComparer<CandidateBlueprint>
     {
         public int Compare(CandidateBlueprint x, CandidateBlueprint y)
         {
@@ -120,7 +120,7 @@ internal readonly struct CandidateBlueprint
     /// the blueprint where the parent solution has the best rarity score (least remaining work).
     /// If they are still equal the index of the first course added is used to resolve the tie.
     /// </summary>
-    public class TieBreakComparer : IComparer<CandidateBlueprint>
+    public readonly struct TieBreakComparer : IComparer<CandidateBlueprint>
     {
         public int Compare(CandidateBlueprint x, CandidateBlueprint y)
         {
