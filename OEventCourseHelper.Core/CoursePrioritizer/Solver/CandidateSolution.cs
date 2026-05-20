@@ -44,12 +44,10 @@ internal record CandidateSolution(
     public ulong GetPotentialRarityGain(Course course, ImmutableArray<ulong> controlRarityLookup)
     {
         var rarityGain = 0UL;
-        foreach (var controlIndex in course.ControlMask)
+        var enumerator = course.ControlMask.GetIntersectionEnumerator(UnvisitedControlsMask);
+        while (enumerator.MoveNext())
         {
-            if (UnvisitedControlsMask[controlIndex])
-            {
-                rarityGain += controlRarityLookup[controlIndex];
-            }
+            rarityGain += controlRarityLookup[enumerator.Current];
         }
 
         return rarityGain;

@@ -154,7 +154,7 @@ internal class BeamSearchSolver(int BeamWidth)
 
                 var baseBucketIndex = controlIndex * courseMaskBucketCount;
                 var targetBucketMask = new BitMask.BucketMask(baseBucketIndex + courseBucketMask.BucketIndex, courseBucketMask.BucketValue);
-                courseInvertedIndexBuilder.SetBucket(targetBucketMask);
+                courseInvertedIndexBuilder.OrBucket(targetBucketMask);
             }
         }
 
@@ -255,11 +255,9 @@ internal class BeamSearchSolver(int BeamWidth)
 
     /// <summary>
     /// A custom priority queue which limits the amount of blueprints to <paramref name="BeamWidth"/> and
-    /// ensures only the best <see cref="CandidateBlueprint"/> are kept by using <paramref name="comparer"/>.
+    /// ensures only the best <see cref="CandidateBlueprint"/>.
     /// </summary>
     /// <param name="BeamWidth">The maximum width of the beam.</param>
-    /// <param name="comparer">The comparere to use.</param>
-    /// <param name="tieBreaker">The comparer used to resolve tie breaks.</param>
     private class BeamBuilder(int BeamWidth)
     {
         private readonly CandidateBlueprint[] beam = new CandidateBlueprint[BeamWidth];

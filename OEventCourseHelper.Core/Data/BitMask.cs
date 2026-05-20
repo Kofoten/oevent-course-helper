@@ -108,6 +108,13 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <returns>The number of required buckets.</returns>
     public static int GetBucketCount(int bitCount) => BitOps.GetBucketCount(bitCount);
 
+    /// <summary>
+    /// Gets an enumerator that can iterate over the intersections of two <see cref="BitMask"/> instances.
+    /// </summary>
+    /// <param name="other">The <see cref="BitMask"/> to check intersections with.</param>
+    /// <returns>An <see cref="IntersectionEnumerator"/>.</returns>
+    public IntersectionEnumerator GetIntersectionEnumerator(ReadOnlySpan<ulong> other) => new(this, other);
+
     #region Factories
     /// <summary>
     /// Creates a new <see cref="BitMask"/> containing only set bits.
@@ -248,7 +255,51 @@ public readonly record struct BitMask : IEquatable<BitMask>
             }
 
             currentBit = BitOperations.TrailingZeroCount(currentBucket);
-            currentBucket &= ~(1UL << currentBit);
+            currentBucket &= currentBucket - 1;
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// An enumerator iterating through all intersecting bits of two <see cref="BitMask"/> instances.
+    /// </summary>
+    /// <param name="a">The first <see cref="BitMask"/> in the intersection enumeration.</param>
+    /// <param name="b">The second <see cref="BitMask"/> in the intersection enumeration.</param>
+    public ref struct IntersectionEnumerator(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
+    {
+        private readonly ReadOnlySpan<ulong> a = a;
+        private readonly ReadOnlySpan<ulong> b = b;
+        private readonly int bucketCount = a.Length < b.Length ? a.Length : b.Length;
+
+        private int bucketIndex = 0;
+        private ulong currentBucket = 0;
+        private int currentBit = -1;
+
+        /// <summary>
+        /// The index of the current set bit.
+        /// </summary>
+        public readonly int Current => ((bucketIndex - 1) << 6) | currentBit;
+
+        /// <summary>
+        /// Move to the index of the next set bit.
+        /// </summary>
+        /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext()
+        {
+            while (currentBucket == 0UL)
+            {
+                if (bucketIndex >= bucketCount)
+                {
+                    return false;
+                }
+
+                currentBucket = a[bucketIndex] & b[bucketIndex];
+                bucketIndex++;
+            }
+
+            currentBit = BitOperations.TrailingZeroCount(currentBucket);
+            currentBucket &= currentBucket - 1;
             return true;
         }
     }
@@ -317,7 +368,12 @@ public readonly record struct BitMask : IEquatable<BitMask>
             return BitOps.Set(buckets, index);
         }
 
-        public void SetBucket(BucketMask bucketMask)
+        /// <summary>
+        /// Performs the OR operation with the BucketValue of <paramref name="bucketMask"/> on the bucket at
+        /// the index specified by BucketIndex in <paramref name="bucketMask"/>.
+        /// </summary>
+        /// <param name="bucketMask">The <see cref="BucketMask"/>.</param>
+        public void OrBucket(BucketMask bucketMask)
         {
             ReziseIfRequired(bucketMask.BucketIndex + 1);
             buckets[bucketMask.BucketIndex] |= bucketMask.BucketValue;
