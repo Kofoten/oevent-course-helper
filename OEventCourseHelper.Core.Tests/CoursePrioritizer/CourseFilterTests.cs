@@ -1,4 +1,5 @@
 ﻿using FluentAssertions;
+using OEventCourseHelper.Core.CoursePrioritizer;
 using OEventCourseHelper.Core.CoursePrioritizer.IO;
 
 namespace OEventCourseHelper.Core.Tests.CoursePrioritizer;
@@ -9,10 +10,11 @@ public class CourseFilterTests
     public void Matches_ShouldMatchCourse()
     {
         // Setup
+        var course = new Course(0, "Course", new([0b1UL]), 1);
         var filter = new CourseFilter(true, ["Course"]);
 
         // Act
-        var actual = filter.Matches("Course", 1);
+        var actual = filter.Matches(course);
 
         // Assert
         actual.Should().BeTrue();
@@ -22,10 +24,11 @@ public class CourseFilterTests
     public void Matches_ShouldNotMatchEmptyCourses()
     {
         // Setup
+        var course = new Course(0, "Empty", new([]), 0);
         var filter = new CourseFilter(true, []);
 
         // Act
-        var actual = filter.Matches("Empty", 0);
+        var actual = filter.Matches(course);
 
         // Assert
         actual.Should().BeFalse();
@@ -35,10 +38,11 @@ public class CourseFilterTests
     public void Matches_ShouldNotMatchCourseNotContainingAnyFilterString()
     {
         // Setup
+        var course = new Course(0, "NoMatch", new([0b10UL]), 1);
         var filter = new CourseFilter(false, ["Course"]);
 
         // Act
-        var actual = filter.Matches("NoMatch", 1);
+        var actual = filter.Matches(course);
 
         // Assert
         actual.Should().BeFalse();

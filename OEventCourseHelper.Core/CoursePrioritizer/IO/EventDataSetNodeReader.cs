@@ -18,11 +18,8 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     private const string CourseElementSchemaType = "Course";
 
     private ReaderState state = ReaderState.ReadControls;
-    private int courseCount = 0;
-    private int controlMaskBucketCount = 0;
     private readonly Dictionary<string, int> controlIndexer = [];
-    private readonly List<(string courseName, int courseOffset, int controlCount)> courseAccumulator = [];
-    private readonly BitMask.Builder courseMaskBuilder = new();
+    private readonly List<Course> courseAccumulator = [];
 
     public Action<string>? OnValidationError { get; set; }
 
@@ -32,35 +29,21 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
     /// <returns>An instance of <see cref="EventDataSet"/></returns>
     public EventDataSet GetEventDataSet()
     {
-        var finalizedCourseMask = courseMaskBuilder.ToBitMask(controlMaskBucketCount * courseCount);
-        var comparer = new ArenaOffsetComparer(finalizedCourseMask, controlMaskBucketCount);
-
-        var finalizedCoursesBuilder = ImmutableArray.CreateBuilder<Course>();
-        var finalizedCourseNamesBuilder = ImmutableArray.CreateBuilder<string>();
-
-        var orderedCourses = courseAccumulator
-            .OrderBy(c => c.courseOffset, comparer)
-            .ThenBy(c => c.courseName, StringComparer.Ordinal);
-
-        var courseIndex = 0;
-        foreach (var (courseName, courseOffset, controlCount) in orderedCourses)
-        {
-            finalizedCoursesBuilder.Add(new Course(courseIndex, courseOffset, controlCount));
-            finalizedCourseNamesBuilder.Add(courseName);
-            courseIndex++;
-        }
+        var finalizedCourses = courseAccumulator
+            .OrderBy(c => c.ControlMask, BitMask.NumericComparer.Instance)
+            .ThenBy(c => c.CourseName, StringComparer.Ordinal)
+            .Select((c, i) => c with
+            {
+                CourseIndex = i
+            })
+            .ToImmutableArray();
 
         var finalizedControls = controlIndexer
             .OrderBy(c => c.Value)
             .Select(c => c.Key)
             .ToImmutableArray();
 
-        return new EventDataSet(
-            finalizedControls,
-            finalizedCourseNamesBuilder.DrainToImmutable(),
-            finalizedCoursesBuilder.DrainToImmutable(),
-            finalizedCourseMask,
-            controlMaskBucketCount);
+        return new EventDataSet(finalizedControls, finalizedCourses);
     }
 
     /// <inheritdoc/>
@@ -127,7 +110,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
 
         string? courseName = null;
         var controlCount = 0;
-        var courseOffset = controlMaskBucketCount * courseCount;
+        var builder = new BitMask.Builder(BitMask.GetBucketCount(controlIndexer.Count));
 
         while (subReader.Read())
         {
@@ -164,8 +147,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
                                 return;
                             }
 
-                            var controlIndex = courseOffset * 64 + index;
-                            if (courseMaskBuilder.Set(controlIndex))
+                            if (builder.Set(index))
                             {
                                 controlCount++;
                             }
@@ -177,19 +159,14 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
             }
         }
 
-
-        if (courseName is null || !Filter.Matches(courseName, controlCount))
+        if (courseName is not null)
         {
-            for (int i = courseOffset; i < courseOffset + controlMaskBucketCount; i++)
+            var course = new Course(-1, courseName, builder.ToBitMask(), controlCount);
+            if (Filter.Matches(course))
             {
-                courseMaskBuilder.ClearBucket(i);
+                courseAccumulator.Add(course);
             }
-
-            return;
         }
-
-        courseCount++;
-        courseAccumulator.Add((courseName, courseOffset, controlCount));
     }
 
     private void SetCanonicalControlIndicies()
@@ -202,8 +179,6 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
         {
             controlIndexer[sortedKeys[i]] = i;
         }
-
-        controlMaskBucketCount = BitMask.GetBucketCount(controlIndexer.Count);
     }
 
     private enum ReaderState
@@ -211,23 +186,5 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
         Undefined = 0,
         ReadControls,
         ReadCourses,
-    }
-
-    public readonly struct ArenaOffsetComparer(BitMask courseMaskArena, int bucketCount) : IComparer<int>
-    {
-        public int Compare(int x, int y)
-        {
-            for (int i = bucketCount - 1; i >= 0; i--)
-            {
-                var xBucket = courseMaskArena.Buckets[x + i];
-                var yBucket = courseMaskArena.Buckets[y + i];
-                if (xBucket != yBucket)
-                {
-                    return xBucket.CompareTo(yBucket);
-                }
-            }
-
-            return 0;
-        }
     }
 }

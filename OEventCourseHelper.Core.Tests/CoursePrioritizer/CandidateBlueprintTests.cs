@@ -8,16 +8,29 @@ namespace OEventCourseHelper.Core.Tests.CoursePrioritizer;
 public class CandidateBlueprintTests
 {
     [Fact]
+    public void Materialize_ShouldReturnParentNoCourseAdded()
+    {
+        // Setup
+        var parent = new CandidateSolution([], new([]), new([]), 0UL);
+        var blueprint = new CandidateBlueprint(parent);
+
+        // Act
+        var actual = blueprint.Materialize();
+
+        // Assert
+        actual.Should().Be(parent);
+    }
+
+    [Fact]
     public void Materialize_ShouldReturnNewCandidateSolution()
     {
         // Setup
-        var courseSlice = new BitMask([0b1UL]);
         var parent = new CandidateSolution([], new([0b0UL]), new([0b1UL]), 1UL);
-        var course = new Course(0, 0, 1);
+        var course = new Course(0, "Course", new([0b1UL]), 1);
         var blueprint = new CandidateBlueprint(parent, course, 0UL);
 
         // Act
-        var actual = blueprint.Materialize(courseSlice, 1);
+        var actual = blueprint.Materialize();
 
         // Assert
         actual.IsComplete.Should().BeTrue();

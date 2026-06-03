@@ -5,8 +5,6 @@ using OEventCourseHelper.Core.Data;
 using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
 byte[] seed = [123, 89, 244, 187, 31, 210, 174, 50];
@@ -45,9 +43,6 @@ var controlCodes = Enumerable.Range(0, controlCount)
     .Select(i => (31 + i).ToString())
     .ToImmutableArray();
 
-var courseNamesBuilder = new string[courseCount];
-var courseMaskBuilder = new BitMask.Builder(courseCount * controlBucketCount);
-
 ImmutableArray<Course> courses;
 using (var hmac = new HMACSHA256(seed))
 {
@@ -55,33 +50,27 @@ using (var hmac = new HMACSHA256(seed))
     courses = [.. Enumerable.Range(0, courseCount)
         .Select(i =>
         {
-            var courseControlCount = 0;
-            var courseOffset = i * controlBucketCount;
+            var courseControls = new ulong[controlBucketCount];
             for (var j = 0; j < controlBucketCount; j++)
             {
                 var coordinate = ((ulong)i << 32) | (uint)j;
                 BinaryPrimitives.WriteUInt64LittleEndian(indexBytes, coordinate);
                 var bytes = hmac.ComputeHash(indexBytes);
                 var bucket = BinaryPrimitives.ReadUInt64LittleEndian(bytes);
-                courseControlCount += BitOperations.PopCount(bucket);
-                courseMaskBuilder.OrBucket(new BitMask.BucketMask(courseOffset + j, bucket));
+                courseControls[j] = bucket;
             }
 
-            courseNamesBuilder[i] = $"Course {i}";
-            return new Course(i, courseOffset, courseControlCount);
+            courseControls[controlBucketCount - 1] &= lastBucketMask;
+
+            var mask = new BitMask([.. courseControls]);
+            return new Course(i, $"Course {i}", mask, mask.PopCount);
         })];
 }
 
 watch.Stop();
 Console.WriteLine($"Generated data set with {controlCount} controls and {courseCount} courses in {watch.Elapsed}");
 
-var dataSet = new EventDataSet(
-    controlCodes,
-    ImmutableCollectionsMarshal.AsImmutableArray(courseNamesBuilder),
-    courses,
-    courseMaskBuilder.ToBitMask(),
-    controlBucketCount);
-
+var dataSet = new EventDataSet(controlCodes, courses);
 var solver = new BeamSearchSolver(beamWidth);
 
 Console.WriteLine("Processing data set...");

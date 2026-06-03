@@ -71,7 +71,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <param name="other">The <see cref="BitMask"/> to use for the operation.</param>
     /// <returns>A new <see cref="BitMask"/>.</returns>
     /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
-    public BitMask AndNot(ReadOnlySpan<ulong> other)
+    public BitMask AndNot(BitMask other)
     {
         BitOps.ThrowIfDifferentLength(this, other, nameof(AndNot));
 
@@ -86,20 +86,11 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <param name="other">The <see cref="BitMask"/> to check against.</param>
     /// <returns>True if this instance is a subset of <paramref name="other"/>; otherwise False.</returns>
     /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
-    public bool IsSubsetOf(BitMask other) => IsSubsetOf(this, other);
-
-    /// <summary>
-    /// Calculates if <paramref name="a"/> is a subset of <paramref name="b"/>.
-    /// </summary>
-    /// <param name="a">The <see cref="BitMask"/> to check.</param>
-    /// <param name="b">The <see cref="BitMask"/> to check against.</param>
-    /// <returns>True if this <paramref name="a"/> is a subset of <paramref name="b"/>; otherwise False.</returns>
-    /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
-    public static bool IsSubsetOf(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
+    public bool IsSubsetOf(BitMask other)
     {
-        BitOps.ThrowIfDifferentLength(a, b, nameof(IsSubsetOf));
+        BitOps.ThrowIfDifferentLength(this, other, nameof(IsSubsetOf));
 
-        return BitOps.IsSubsetOf(a, b);
+        return BitOps.IsSubsetOf(this, other);
     }
 
     /// <summary>
@@ -389,24 +380,14 @@ public readonly record struct BitMask : IEquatable<BitMask>
         }
 
         /// <summary>
-        /// Zeroes out the bucket at <paramref name="bucketIndex"/>.
-        /// </summary>
-        /// <param name="bucketIndex">The bucket to clear.</param>
-        public void ClearBucket(int bucketIndex)
-        {
-            ReziseIfRequired(bucketIndex + 1);
-            buckets[bucketIndex] = 0UL;
-        }
-
-        /// <summary>
         /// Performs the AND NOT operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
         /// </summary>
         /// <param name="other">The <see cref="BitMask"/> to use when performing the AND NOT operation on the <see cref="Builder"/>.</param>
         /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
-        public void AndNot(ReadOnlySpan<ulong> other)
+        public void AndNot(BitMask other)
         {
-            ReziseIfRequired(other.Length);
-            for (int i = 0; i < other.Length; i++)
+            ReziseIfRequired(other.BucketCount);
+            for (int i = 0; i < other.BucketCount; i++)
             {
                 BitOps.AndNotBucketAt(buckets, i, other);
             }
@@ -634,6 +615,35 @@ public readonly record struct BitMask : IEquatable<BitMask>
         /// </summary>
         /// <returns>A new <see cref="BitMaskEnumerator"/>.</returns>
         public BitMaskEnumerator GetEnumerator() => new(buckets);
+    }
+    #endregion
+
+    #region Comparer
+    /// <summary>
+    /// Compares two <see cref="BitMask"/> objects treating them as a large unsigned integer.
+    /// </summary>
+    /// <remarks>
+    /// When comparing <see cref="BitMask"/> objects of different lengths, missing buckets are treated as zero.
+    /// </remarks>
+    public class NumericComparer : IComparer<BitMask>
+    {
+        public static readonly NumericComparer Instance = new();
+
+        public int Compare(BitMask x, BitMask y)
+        {
+            int len = Math.Max(x.Buckets.Length, y.Buckets.Length);
+            for (int i = len - 1; i >= 0; i--)
+            {
+                var xBucket = i < x.Buckets.Length ? x.Buckets[i] : 0UL;
+                var yBucket = i < y.Buckets.Length ? y.Buckets[i] : 0UL;
+                if (xBucket != yBucket)
+                {
+                    return xBucket.CompareTo(yBucket);
+                }
+            }
+
+            return 0;
+        }
     }
     #endregion
 }

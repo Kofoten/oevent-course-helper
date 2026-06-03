@@ -46,8 +46,7 @@ public class CoursePrioritizerEngine(int BeamWidth, bool Strict, IEnumerable<str
         var orphanedControlsMaskBuilder = BitMask.Builder.From(BitMask.Fill(dataSet.Controls.Length));
         foreach (var course in dataSet.Courses)
         {
-            var slice = dataSet.CourseMask.Slice(course.CourseOffset, dataSet.ControlMaskBucketCount);
-            orphanedControlsMaskBuilder.AndNot(slice);
+            orphanedControlsMaskBuilder.AndNot(course.ControlMask);
         }
 
         var orphanedControlsMask = orphanedControlsMaskBuilder.ToBitMask();

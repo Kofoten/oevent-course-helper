@@ -2,16 +2,21 @@
 
 namespace OEventCourseHelper.Core.CoursePrioritizer.IO;
 
-internal record CourseFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
+internal class CourseFilter(bool FilterEmpty, ImmutableArray<string> NameIncludes)
 {
-    public bool Matches(string courseName, int controlCount)
+    /// <summary>
+    /// Checks if <paramref name="course"/> matches the filter.
+    /// </summary>
+    /// <param name="builder">The <see cref="Course"/> to check.</param>
+    /// <returns>True if the <see cref="Course"/> matches the filter; otherwise False.</returns>
+    public bool Matches(Course course)
     {
-        if (FilterEmpty && controlCount == 0)
+        if (FilterEmpty && course.ControlMask.IsZero)
         {
             return false;
         }
 
-        if (NameIncludes.Length > 0 && !NameIncludes.Any(courseName.Contains))
+        if (NameIncludes.Length > 0 && !NameIncludes.Any(course.CourseName.Contains))
         {
             return false;
         }

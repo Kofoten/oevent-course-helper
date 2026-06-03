@@ -5,38 +5,62 @@ namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 /// <summary>
 /// A blueprint used to materialize an instance of <see cref="CandidateSolution"/>.
 /// </summary>
-/// <remarks>
-/// Creates a new blueprint from a <see cref="CandidateSolution"/>, a <see cref="Course"/> and the projected rarity score.
-/// </remarks>
-/// <param name="parent">The parent solution for the blueprint.</param>
-/// <param name="addedCourse">The course to be included in the solution when materialized.</param>
-/// <param name="projectedRarityScore">The projected rarity score when the course get added.</param>
-internal readonly struct CandidateBlueprint(CandidateSolution parent, Course addedCourse, ulong projectedRarityScore)
+internal readonly struct CandidateBlueprint
 {
-    private readonly CandidateSolution parent = parent;
-    private readonly Course addedCourse = addedCourse;
+    private readonly CandidateSolution parent;
+    private readonly Course? addedCourse;
 
     /// <summary>
     /// The number of courses that would be included in the materialized solution.
     /// </summary>
-    public int CourseCount { get; private init; } = parent.CourseCount + 1;
+    public int CourseCount { get; private init; }
 
     /// <summary>
     /// The rarity score of the solution that would be materialized.
     /// </summary>
-    public ulong RarityScore { get; private init; } = projectedRarityScore;
+    public ulong RarityScore { get; private init; }
+
+    /// <summary>
+    /// Creates a new blueprint from a <see cref="CandidateSolution"/>.
+    /// </summary>
+    /// <param name="parent">The parent solution for the blueprint.</param>
+    public CandidateBlueprint(CandidateSolution parent)
+    {
+        this.parent = parent;
+        addedCourse = null;
+        CourseCount = parent.CourseCount;
+        RarityScore = parent.RarityScore;
+    }
+
+    /// <summary>
+    /// Creates a new blueprint from a <see cref="CandidateSolution"/>, a <see cref="Course"/> and the projected rarity score.
+    /// </summary>
+    /// <param name="parent">The parent solution for the blueprint.</param>
+    /// <param name="addedCourse">The course to be included in the solution when materialized.</param>
+    /// <param name="projectedRarityScore">The projected rarity score when the course get added.</param>
+    public CandidateBlueprint(CandidateSolution parent, Course addedCourse, ulong projectedRarityScore)
+    {
+        this.parent = parent;
+        this.addedCourse = addedCourse;
+        CourseCount = parent.CourseCount + 1;
+        RarityScore = projectedRarityScore;
+    }
 
     /// <summary>
     /// Materializes a <see cref="CandidateSolution"/> based on this blueprint.
     /// </summary>
     /// <returns>A new instance of <see cref="CandidateSolution"/> with the course from the blueprint included.</returns>
-    public CandidateSolution Materialize(BitMask courseMask, int controlMaskBucketCount)
+    public CandidateSolution Materialize()
     {
-        var courseSlice = courseMask.Slice(addedCourse.CourseOffset, controlMaskBucketCount);
+        if (addedCourse is null)
+        {
+            return parent;
+        }
+
         return new CandidateSolution(
             parent.CourseOrder.Add(addedCourse),
             parent.IncludedCoursesMask.Set(addedCourse.CourseIndex),
-            parent.UnvisitedControlsMask.AndNot(courseSlice),
+            parent.UnvisitedControlsMask.AndNot(addedCourse.ControlMask),
             RarityScore);
     }
 
@@ -53,6 +77,15 @@ internal readonly struct CandidateBlueprint(CandidateSolution parent, Course add
             if (rarityResult != 0)
             {
                 return rarityResult;
+            }
+
+            if (x.addedCourse is null)
+            {
+                return y.addedCourse is null ? 0 : -1;
+            }
+            else if (y.addedCourse is null)
+            {
+                return 1;
             }
 
             var xBucketMask = BitMask.BucketMask.FromBitIndex(x.addedCourse.CourseIndex);
