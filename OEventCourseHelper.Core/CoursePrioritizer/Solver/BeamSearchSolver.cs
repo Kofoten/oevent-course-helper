@@ -69,12 +69,6 @@ internal class BeamSearchSolver(int BeamWidth)
         {
             foreach (var candidate in beam)
             {
-                if (candidate.IsComplete)
-                {
-                    beamBuilder.InsertOrDiscard(new CandidateBlueprint(candidate));
-                    continue;
-                }
-
                 foreach (var controlIndex in candidate.UnvisitedControlsMask)
                 {
                     var firstBucket = controlIndex * context.CourseMaskBucketCount;
@@ -94,8 +88,12 @@ internal class BeamSearchSolver(int BeamWidth)
                 foreach (var courseIndex in validCoursesMaskWorkspace)
                 {
                     var course = context.Courses[courseIndex];
+                    var rarityGain = candidate.GetPotentialRarityGain(
+                        course,
+                        context.CourseMask,
+                        context.ControlRarityLookup,
+                        context.ControlMaskBucketCount);
 
-                    var rarityGain = candidate.GetPotentialRarityGain(course, context.ControlRarityLookup);
                     if (rarityGain == 0UL)
                     {
                         continue;
@@ -116,7 +114,7 @@ internal class BeamSearchSolver(int BeamWidth)
                 validCoursesMaskWorkspace.Clear();
             }
 
-            beam = beamBuilder.MaterializeAndReset();
+            beam = beamBuilder.MaterializeAndReset(context.CourseMask, context.ControlMaskBucketCount);
             if (beam.Length > 0 && beam[0].IsComplete)
             {
                 break;
@@ -202,7 +200,8 @@ internal class BeamSearchSolver(int BeamWidth)
             dataSet.Courses,
             ImmutableCollectionsMarshal.AsImmutableArray(controlRarityLookup),
             dominatedCoursesMaskBuilder.ToBitMask(),
-            courseInvertedIndex);
+            courseInvertedIndex,
+            dataSet.CourseMask);
     }
 
     /// <summary>
@@ -350,12 +349,12 @@ internal class BeamSearchSolver(int BeamWidth)
         /// Creates an <see cref="ImmutableArray"/> containing the materialized <see cref="CandidateSolution"/>
         /// from the blueprints currenly in the builder, then resets the builder.
         /// </summary>
-        public ImmutableArray<CandidateSolution> MaterializeAndReset()
+        public ImmutableArray<CandidateSolution> MaterializeAndReset(BitMask courseMask, int controlMaskBucketCount)
         {
             var resultBuilder = ImmutableArray.CreateBuilder<CandidateSolution>(Count);
             for (int i = 0; i < Count; i++)
             {
-                resultBuilder.Add(beam[i].Materialize());
+                resultBuilder.Add(beam[i].Materialize(courseMask, controlMaskBucketCount));
                 beam[i] = default;
             }
 

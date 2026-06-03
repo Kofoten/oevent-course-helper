@@ -11,8 +11,8 @@ public class CandidateBlueprintRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXHasLowerRarityScore()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([]), new([]), 1UL));
-        var y = new CandidateBlueprint(new([], new([]), new([]), 2UL));
+        var x = new CandidateBlueprint(new([], new([]), new([]), 0UL), new(0, 0, 1), 1UL);
+        var y = new CandidateBlueprint(new([], new([]), new([]), 0UL), new(1, 1, 1), 2UL);
 
         // Act
         var actual = rarityComparer.Compare(x, y);
@@ -25,8 +25,8 @@ public class CandidateBlueprintRarityComparerTests
     public void Compare_ShouldReturnPositive_WhenYHasLowerRarityScore()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([]), new([]), 2UL));
-        var y = new CandidateBlueprint(new([], new([]), new([]), 1UL));
+        var x = new CandidateBlueprint(new([], new([]), new([]), 0UL), new(0, 0, 1), 2UL);
+        var y = new CandidateBlueprint(new([], new([]), new([]), 0UL), new(1, 1, 1), 1UL);
 
         // Act
         var actual = rarityComparer.Compare(x, y);
@@ -39,8 +39,8 @@ public class CandidateBlueprintRarityComparerTests
     public void Compare_ShouldReturnNegative_WhenXProjectedIncludedCourseMaskIsLower()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([0b010]), new([]), 1UL), new(0, "Course 1", new([]), 1), 1UL);
-        var y = new CandidateBlueprint(new([], new([0b101]), new([]), 1UL), new(1, "Course 2", new([]), 1), 1UL);
+        var x = new CandidateBlueprint(new([], new([0b010]), new([]), 1UL), new(0, 0, 1), 1UL);
+        var y = new CandidateBlueprint(new([], new([0b101]), new([]), 1UL), new(1, 1, 1), 1UL);
 
         // Act
         var actual = rarityComparer.Compare(x, y);
@@ -53,8 +53,8 @@ public class CandidateBlueprintRarityComparerTests
     public void Compare_ShouldReturnPositive_WhenYProjectedIncludedCourseMaskIsLower()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([0b110]), new([]), 1UL), new(0, "Course 1", new([]), 1), 1UL);
-        var y = new CandidateBlueprint(new([], new([0b001]), new([]), 1UL), new(1, "Course 2", new([]), 1), 1UL);
+        var x = new CandidateBlueprint(new([], new([0b110]), new([]), 1UL), new(0, 0, 1), 1UL);
+        var y = new CandidateBlueprint(new([], new([0b001]), new([]), 1UL), new(1, 1, 1), 1UL);
 
         // Act
         var actual = rarityComparer.Compare(x, y);
@@ -67,8 +67,8 @@ public class CandidateBlueprintRarityComparerTests
     public void Compare_ShouldReturnZero_WhenProjectedIncludedCourseMaskIsEqual()
     {
         // Setup
-        var x = new CandidateBlueprint(new([], new([0b110]), new([]), 1UL), new(0, "Course 1", new([]), 1), 1UL);
-        var y = new CandidateBlueprint(new([], new([0b101]), new([]), 1UL), new(1, "Course 2", new([]), 1), 1UL);
+        var x = new CandidateBlueprint(new([], new([0b110]), new([]), 1UL), new(0, 0, 1), 1UL);
+        var y = new CandidateBlueprint(new([], new([0b101]), new([]), 1UL), new(1, 1, 1), 1UL);
 
         // Act
         var actual = rarityComparer.Compare(x, y);

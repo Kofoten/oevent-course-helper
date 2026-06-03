@@ -22,10 +22,11 @@ public class CandidateSolutionTests
             controlRarityLookup.Aggregate(0UL, (acc, x) => acc + x),
             2,
             1,
-            [new Course(0, "The Course", new([0b0UL, 0b1UL]), 1)],
+            [new Course(0, 0, 1)],
             controlRarityLookup,
             new([]),
-            new([]));
+            new([]),
+            new([0b0UL, 0b1UL]));
 
         // Act
         var actual = CandidateSolution.Initial(context);
@@ -50,11 +51,12 @@ public class CandidateSolutionTests
             .Select(_ => 5000000UL)
             .ToImmutableArray();
 
-        var course = new Course(0, "A", new([alternating, ((1UL << 32) - 1) & alternating]), 48);
+        var courseMask = new BitMask([alternating, ((1UL << 32) - 1) & alternating]);
+        var course = new Course(0, 0, 48);
         var solution = new CandidateSolution([], new([0UL]), new([ulong.MaxValue, (1UL << 32) - 1]), 480000000UL);
 
         // Act
-        var actual = solution.GetPotentialRarityGain(course, controlRarityLookup);
+        var actual = solution.GetPotentialRarityGain(course, courseMask, controlRarityLookup, 2);
 
         // Assert
         actual.Should().Be(240000000UL);

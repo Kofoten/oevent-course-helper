@@ -57,8 +57,8 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
 
         return new EventDataSet(
             finalizedControls,
-            finalizedCourseNamesBuilder.MoveToImmutable(),
-            finalizedCoursesBuilder.MoveToImmutable(),
+            finalizedCourseNamesBuilder.DrainToImmutable(),
+            finalizedCoursesBuilder.DrainToImmutable(),
             finalizedCourseMask,
             controlMaskBucketCount);
     }
@@ -178,7 +178,7 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
         }
 
 
-        if (courseName is null || !MatchesFilter(courseName, controlCount))
+        if (courseName is null || !Filter.Matches(courseName, controlCount))
         {
             for (int i = courseOffset; i < courseOffset + controlMaskBucketCount; i++)
             {
@@ -204,21 +204,6 @@ internal class EventDataSetNodeReader(CourseFilter Filter) : IXmlNodeReader
         }
 
         controlMaskBucketCount = BitMask.GetBucketCount(controlIndexer.Count);
-    }
-
-    private bool MatchesFilter(string courseName, int controlCount)
-    {
-        if (Filter.FilterEmpty && controlCount == 0)
-        {
-            return false;
-        }
-
-        if (Filter.NameIncludes.Length > 0 && !Filter.NameIncludes.Any(courseName.Contains))
-        {
-            return false;
-        }
-
-        return true;
     }
 
     private enum ReaderState

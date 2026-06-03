@@ -41,10 +41,15 @@ internal record CandidateSolution(
     /// <param name="course">The <see cref="Course"/> to calculate rarity gain for.</param>
     /// <param name="controlRarityLookup">The lookup containing each controls rarity score.</param>
     /// <returns>The calculated gain to this solution by including the provided <see cref="Course"/>.</returns>
-    public ulong GetPotentialRarityGain(Course course, ImmutableArray<ulong> controlRarityLookup)
+    public ulong GetPotentialRarityGain(
+        Course course,
+        BitMask courseMask,
+        ImmutableArray<ulong> controlRarityLookup,
+        int controlMaskBucketCount)
     {
         var rarityGain = 0UL;
-        var enumerator = course.ControlMask.GetIntersectionEnumerator(UnvisitedControlsMask);
+        var courseSlice = courseMask.Slice(course.CourseOffset, controlMaskBucketCount);
+        var enumerator = new BitMask.IntersectionEnumerator(courseSlice, UnvisitedControlsMask);
         while (enumerator.MoveNext())
         {
             rarityGain += controlRarityLookup[enumerator.Current];

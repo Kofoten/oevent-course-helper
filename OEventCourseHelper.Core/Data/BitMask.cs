@@ -71,7 +71,7 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <param name="other">The <see cref="BitMask"/> to use for the operation.</param>
     /// <returns>A new <see cref="BitMask"/>.</returns>
     /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
-    public BitMask AndNot(BitMask other)
+    public BitMask AndNot(ReadOnlySpan<ulong> other)
     {
         BitOps.ThrowIfDifferentLength(this, other, nameof(AndNot));
 

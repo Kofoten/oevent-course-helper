@@ -1,6 +1,5 @@
 ﻿using FluentAssertions;
 using OEventCourseHelper.Core.CoursePrioritizer.IO;
-using OEventCourseHelper.Core.Data;
 using OEventCourseHelper.Core.Xml.Iof;
 
 namespace OEventCourseHelper.Core.Tests.CoursePrioritizer;
@@ -60,16 +59,17 @@ public class EventDataSetNodeReaderTests
             var dataSet = reader.GetEventDataSet();
             dataSet.Controls.Should().HaveCount(2);
             dataSet.Controls.Should().BeEquivalentTo(["31", "32"], conf => conf.WithStrictOrdering());
+            dataSet.CourseNames.Should().HaveCount(3);
+            dataSet.CourseNames.Should().BeEquivalentTo(["TestCourse3", "TestCourse1", "TestCourse2"], conf => conf.WithStrictOrdering());
+            dataSet.CourseMask.Buckets.Should().HaveCount(3);
+            dataSet.CourseMask.Buckets.Should().BeEquivalentTo([0b11UL, 0b11UL, 0b01UL], conf => conf.WithStrictOrdering());
             dataSet.Courses.Should().HaveCount(3);
             dataSet.Courses[0].CourseIndex.Should().Be(0);
-            dataSet.Courses[0].CourseName.Should().Be("TestCourse3");
-            dataSet.Courses[0].ControlMask.Should().Be(new BitMask([0b01UL]));
+            dataSet.Courses[0].CourseOffset.Should().Be(2);
             dataSet.Courses[1].CourseIndex.Should().Be(1);
-            dataSet.Courses[1].CourseName.Should().Be("TestCourse1");
-            dataSet.Courses[1].ControlMask.Should().Be(new BitMask([0b11UL]));
+            dataSet.Courses[1].CourseOffset.Should().Be(0);
             dataSet.Courses[2].CourseIndex.Should().Be(2);
-            dataSet.Courses[2].CourseName.Should().Be("TestCourse2");
-            dataSet.Courses[2].ControlMask.Should().Be(new BitMask([0b11UL]));
+            dataSet.Courses[2].CourseOffset.Should().Be(1);
         }
         finally
         {
