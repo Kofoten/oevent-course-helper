@@ -170,10 +170,11 @@ internal class BeamSearchSolver(int BeamWidth)
             }
         }
 
+        var courseInvertedIndex = courseInvertedIndexBuilder.ToBitMask();
         var dominatedCoursesMaskBuilder = new BitMask.Builder(courseMaskBucketCount);
         foreach (var course in dataSet.Courses)
         {
-            if (IsDominated(course, dataSet.Courses, controlRarityLookup))
+            if (IsDominated(course, dataSet.Courses, controlRarityLookup, courseInvertedIndex, courseMaskBucketCount))
             {
                 dominatedCoursesMaskBuilder.Set(course.CourseIndex);
             }
@@ -187,7 +188,7 @@ internal class BeamSearchSolver(int BeamWidth)
             dataSet.Courses,
             ImmutableCollectionsMarshal.AsImmutableArray(controlRarityLookup),
             dominatedCoursesMaskBuilder.ToBitMask(),
-            courseInvertedIndexBuilder.ToBitMask());
+            courseInvertedIndex);
     }
 
     /// <summary>
@@ -196,7 +197,7 @@ internal class BeamSearchSolver(int BeamWidth)
     /// <param name="course">The <see cref="Course"> to check.</param>
     /// <param name="context">The context of the current search.</param>
     /// <returns>True if <paramref name="course"/> is dominated by any course mask in <paramref name="allCourses"/>; otherwise False.</returns>
-    private static bool IsDominated(Course course, ImmutableArray<Course> courses, ReadOnlySpan<ulong> controlRarityLookup)
+    private static bool IsDominated(Course course, ImmutableArray<Course> courses, ReadOnlySpan<ulong> controlRarityLookup, BitMask courseInvertedIndex, int courseMaskBucketCount)
     {
         var rarestValue = 0UL;
         var indexOfRarest = -1;
@@ -219,14 +220,12 @@ internal class BeamSearchSolver(int BeamWidth)
             return true;
         }
 
-        foreach (var other in courses)
+        var candidateMask = courseInvertedIndex.Slice(indexOfRarest * courseMaskBucketCount, courseMaskBucketCount);
+        var candidateEnumerator = new BitMask.BitMaskEnumerator(candidateMask);
+        while (candidateEnumerator.MoveNext())
         {
-            if (ReferenceEquals(course, other))
-            {
-                continue;
-            }
-
-            if (!other.ControlMask[indexOfRarest])
+            var other = courses[candidateEnumerator.Current];
+            if (course.CourseIndex == other.CourseIndex)
             {
                 continue;
             }
