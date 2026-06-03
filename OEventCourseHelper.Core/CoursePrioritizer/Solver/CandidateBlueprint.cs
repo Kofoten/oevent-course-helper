@@ -8,7 +8,7 @@ namespace OEventCourseHelper.Core.CoursePrioritizer.Solver;
 internal readonly struct CandidateBlueprint
 {
     private readonly CandidateSolution parent;
-    private readonly Course? addedCourse;
+    private readonly Course addedCourse;
 
     /// <summary>
     /// The number of courses that would be included in the materialized solution.

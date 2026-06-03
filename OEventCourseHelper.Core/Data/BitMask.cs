@@ -86,11 +86,21 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <param name="other">The <see cref="BitMask"/> to check against.</param>
     /// <returns>True if this instance is a subset of <paramref name="other"/>; otherwise False.</returns>
     /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
-    public bool IsSubsetOf(BitMask other)
-    {
-        BitOps.ThrowIfDifferentLength(this, other, nameof(IsSubsetOf));
+    public bool IsSubsetOf(BitMask other) => IsSubsetOf(this, other);
+    }
 
-        return BitOps.IsSubsetOf(this, other);
+    /// <summary>
+    /// Calculates if <paramref name="a"/> is a subset of <paramref name="b"/>.
+    /// </summary>
+    /// <param name="a">The <see cref="BitMask"/> to check.</param>
+    /// <param name="b">The <see cref="BitMask"/> to check against.</param>
+    /// <returns>True if this <paramref name="a"/> is a subset of <paramref name="b"/>; otherwise False.</returns>
+    /// <exception cref="InvalidOperationException">If the length of this <see cref="BitMask"/> and <paramref name="other"/> differs.</exception>
+    public static bool IsSubsetOf(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
+    {
+        BitOps.ThrowIfDifferentLength(a, b, nameof(IsSubsetOf));
+
+        return BitOps.IsSubsetOf(a, b);
     }
 
     /// <summary>
@@ -204,447 +214,428 @@ public readonly record struct BitMask : IEquatable<BitMask>
     /// <param name="BucketIndex">The index of the bucket.</param>
     /// <param name="BucketValue">The value of the bucket.</param>
     public readonly record struct BucketMask(int BucketIndex, ulong BucketValue)
-    {
-        /// <summary>
-        /// Creates a new <see cref="BucketMask"/> representing a bucket with a single bit set.
-        /// </summary>
-        /// <param name="bitIndex">The index of the set bit in relation to a full <see cref="BitMask"/>.</param>
-        /// <returns>A <see cref="BucketMask"/> representing the specific set bit.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static BucketMask FromBitIndex(int bitIndex)
-        {
-            return new(
-                BitOps.GetBucketIndex(bitIndex),
-                BitOps.GetBucketValue(bitIndex));
-        }
-    }
-    #endregion
-
-    #region Enumerators
+{
     /// <summary>
-    /// An enumerator iterating through all set bits of a <see cref="BitMask"/>.
+    /// Creates a new <see cref="BucketMask"/> representing a bucket with a single bit set.
     /// </summary>
-    /// <param name="buckets">The <see cref="BitMask"/> to iterate through.</param>
-    public ref struct BitMaskEnumerator(ReadOnlySpan<ulong> buckets)
+    /// <param name="bitIndex">The index of the set bit in relation to a full <see cref="BitMask"/>.</param>
+    /// <returns>A <see cref="BucketMask"/> representing the specific set bit.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static BucketMask FromBitIndex(int bitIndex)
     {
-        private readonly ReadOnlySpan<ulong> buckets = buckets;
-        private int bucketIndex = 0;
-        private ulong currentBucket = 0;
-        private int currentBit = -1;
-
-        /// <summary>
-        /// The index of the current set bit.
-        /// </summary>
-        public readonly int Current => ((bucketIndex - 1) << 6) | currentBit;
-
-        /// <summary>
-        /// Move to the index of the next set bit.
-        /// </summary>
-        /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MoveNext()
-        {
-            while (currentBucket == 0UL)
-            {
-                if (bucketIndex >= buckets.Length)
-                {
-                    return false;
-                }
-
-                currentBucket = buckets[bucketIndex++];
-            }
-
-            currentBit = BitOperations.TrailingZeroCount(currentBucket);
-            currentBucket &= currentBucket - 1;
-            return true;
-        }
+        return new(
+            BitOps.GetBucketIndex(bitIndex),
+            BitOps.GetBucketValue(bitIndex));
     }
+}
+#endregion
+
+#region Enumerators
+/// <summary>
+/// An enumerator iterating through all set bits of a <see cref="BitMask"/>.
+/// </summary>
+/// <param name="buckets">The <see cref="BitMask"/> to iterate through.</param>
+public ref struct BitMaskEnumerator(ReadOnlySpan<ulong> buckets)
+{
+    private readonly ReadOnlySpan<ulong> buckets = buckets;
+    private int bucketIndex = 0;
+    private ulong currentBucket = 0;
+    private int currentBit = -1;
 
     /// <summary>
-    /// An enumerator iterating through all intersecting bits of two <see cref="BitMask"/> instances.
+    /// The index of the current set bit.
     /// </summary>
-    /// <param name="a">The first <see cref="BitMask"/> in the intersection enumeration.</param>
-    /// <param name="b">The second <see cref="BitMask"/> in the intersection enumeration.</param>
-    public ref struct IntersectionEnumerator(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
-    {
-        private readonly ReadOnlySpan<ulong> a = a;
-        private readonly ReadOnlySpan<ulong> b = b;
-        private readonly int bucketCount = a.Length < b.Length ? a.Length : b.Length;
+    public readonly int Current => ((bucketIndex - 1) << 6) | currentBit;
 
-        private int bucketIndex = 0;
-        private ulong currentBucket = 0;
-        private int currentBit = -1;
-
-        /// <summary>
-        /// The index of the current set bit.
-        /// </summary>
-        public readonly int Current => ((bucketIndex - 1) << 6) | currentBit;
-
-        /// <summary>
-        /// Move to the index of the next set bit.
-        /// </summary>
-        /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool MoveNext()
-        {
-            while (currentBucket == 0UL)
-            {
-                if (bucketIndex >= bucketCount)
-                {
-                    return false;
-                }
-
-                currentBucket = a[bucketIndex] & b[bucketIndex];
-                bucketIndex++;
-            }
-
-            currentBit = BitOperations.TrailingZeroCount(currentBucket);
-            currentBucket &= currentBucket - 1;
-            return true;
-        }
-    }
-    #endregion
-
-    #region Builders
     /// <summary>
-    /// A builder used to create a new <see cref="BitMask"/>.
+    /// Move to the index of the next set bit.
     /// </summary>
-    public class Builder
+    /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool MoveNext()
     {
-        private readonly int initializedBucketCount;
-        private ulong[]? buckets;
-
-        /// <summary>
-        /// Indicates if all bits of the <see cref="Builder"/> is set to zero.
-        /// </summary>
-        public bool IsZero => BitOps.IsZero(buckets);
-
-        /// <summary>
-        /// Indicates if the <see cref="Builder"/> already has been used to produce a <see cref="BitMask"/>.
-        /// </summary>
-        [MemberNotNullWhen(false, nameof(buckets))]
-        public bool IsConsumed => buckets is null;
-
-        /// <summary>
-        /// Creates a new <see cref="Builder"/> with an unrestricted bucket count.
-        /// </summary>
-        /// <remarks>
-        /// This requires calling <see cref="ToBitMask(int)"/> and specifying the bucket count when producing the <see cref="BitMask"/>.
-        /// </remarks>
-        public Builder()
+        while (currentBucket == 0UL)
         {
-            initializedBucketCount = -1;
-            buckets = [];
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="Builder"/> with a restricted bucket count.
-        /// </summary>
-        /// <remarks>
-        /// This allows calling <see cref="ToBitMask()"/> when producing the <see cref="BitMask"/>.
-        /// </remarks>
-        public Builder(int bucketCount)
-        {
-            initializedBucketCount = bucketCount;
-            buckets = new ulong[bucketCount];
-        }
-
-        /// <summary>
-        /// Sets a specified bit in the <see cref="Builder"/> to 1.
-        /// </summary>
-        /// <param name="index">The index of the bit to set.</param>
-        /// <returns>True if the bit was NOT already set; otherwise False.</returns>
-        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">If the index is not a positive integer.</exception>
-        public bool Set(int index)
-        {
-            if (index < 0)
+            if (bucketIndex >= buckets.Length)
             {
-                ThrowNegativeIndexArgument(nameof(index));
+                return false;
             }
 
-            var requiredBucketCount = BitOps.GetBucketCount(index + 1);
-            ReziseIfRequired(requiredBucketCount);
-            return BitOps.Set(buckets, index);
+            currentBucket = buckets[bucketIndex++];
         }
 
-        /// <summary>
-        /// Performs the OR operation with the BucketValue of <paramref name="bucketMask"/> on the bucket at
-        /// the index specified by BucketIndex in <paramref name="bucketMask"/>.
-        /// </summary>
-        /// <param name="bucketMask">The <see cref="BucketMask"/>.</param>
-        public void OrBucket(BucketMask bucketMask)
-        {
-            ReziseIfRequired(bucketMask.BucketIndex + 1);
-            buckets[bucketMask.BucketIndex] |= bucketMask.BucketValue;
-        }
-
-        /// <summary>
-        /// Performs the AND NOT operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
-        /// </summary>
-        /// <param name="other">The <see cref="BitMask"/> to use when performing the AND NOT operation on the <see cref="Builder"/>.</param>
-        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
-        public void AndNot(BitMask other)
-        {
-            ReziseIfRequired(other.BucketCount);
-            for (int i = 0; i < other.BucketCount; i++)
-            {
-                BitOps.AndNotBucketAt(buckets, i, other);
-            }
-        }
-
-        /// <summary>
-        /// Performs the OR operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
-        /// </summary>
-        /// <param name="other">The <see cref="BitMask"/> to use when performing the OR operation on the <see cref="Builder"/>.</param>
-        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
-        public void Or(BitMask other)
-        {
-            ReziseIfRequired(other.BucketCount);
-            for (int i = 0; i < other.BucketCount; i++)
-            {
-                BitOps.OrBucketAt(buckets, i, other);
-            }
-        }
-
-        /// <summary>
-        /// Produces a <see cref="BitMask"/> from the <see cref="Builder"/>.
-        /// </summary>
-        /// <remarks>
-        /// This will consume the <see cref="Builder"/> making it unusable.
-        /// </remarks>
-        /// <returns>A new <see cref="BitMask"/>.</returns>
-        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed, the bucket count is unknown or the
-        /// underlying array is longer than the number of buckets the <see cref="Builder"/> was initialized to support.</exception>
-        public BitMask ToBitMask()
-        {
-            ThrowIfConsumed();
-
-            if (initializedBucketCount == -1)
-            {
-                ThrowUnknownBucketCount();
-            }
-
-            if (buckets.Length > initializedBucketCount)
-            {
-                ThrowExceedsInitializedBucketCount(buckets.Length, initializedBucketCount);
-            }
-
-            return ToBitMask(initializedBucketCount);
-        }
-
-        /// <summary>
-        /// Produces a <see cref="BitMask"/> from the <see cref="Builder"/> with exactly <paramref name="exactBucketCount"/> of
-        /// buckets.
-        /// </summary>
-        /// <remarks>
-        /// <list type="bullet">
-        /// <item>Buckets added for padding will be zero.</item>
-        /// <item>This will consume the <see cref="Builder"/> making it unusable.</item>
-        /// </list>
-        /// </remarks>
-        /// <param name="exactBucketCount">The exact number of buckets of the resulting <see cref="BitMask"/>.</param>
-        /// <returns>A new <see cref="BitMask"/>.</returns>
-        /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
-        public BitMask ToBitMask(int exactBucketCount)
-        {
-            ReziseIfRequired(exactBucketCount);
-            var immutable = ImmutableCollectionsMarshal.AsImmutableArray(buckets);
-            buckets = null;
-            return new BitMask(immutable);
-        }
-
-        /// <summary>
-        /// Creates a new <see cref="Builder"/> initialized with the bits set in <paramref name="mask"/>.
-        /// </summary>
-        /// <param name="mask">The <see cref="BitMask"/> to initialize the builder with.</param>
-        /// <returns>A new instance of <see cref="Builder"/> with the bits set in <paramref name="mask"/> set.</returns>
-        public static Builder From(BitMask mask)
-        {
-            var builder = new Builder(mask.BucketCount);
-#pragma warning disable CS8604 // builder.buckets can not be null on a fresh instance.
-            mask.Buckets.CopyTo(builder.buckets);
-#pragma warning restore CS8604
-            return builder;
-        }
-
-        /// <summary>
-        /// Resizes the underlying array if the required length is greater than the current length of the underlying array.
-        /// </summary>
-        /// <param name="requiredBucketCount">The required length of the underlying array.</param>
-        /// <exception cref="InvalidOperationException">If the builder is consumed.</exception>
-        [MemberNotNull(nameof(buckets))]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ReziseIfRequired(int requiredBucketCount)
-        {
-            ThrowIfConsumed();
-
-            if (buckets.Length < requiredBucketCount)
-            {
-                Array.Resize(ref buckets, requiredBucketCount);
-            }
-        }
-
-        /// <summary>
-        /// Throws an <see cref="InvalidOperationException"/> if the builder has been consumed.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">If the builder is consumed.</exception>
-        [MemberNotNull(nameof(buckets))]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void ThrowIfConsumed()
-        {
-            if (IsConsumed)
-            {
-                ThrowIsConsumed();
-            }
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowIsConsumed()
-        {
-            throw new InvalidOperationException("Can not operate on a builder that is consumed.");
-        }
-
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowUnknownBucketCount()
-        {
-            throw new InvalidOperationException("Can not create a bit mask with an unknown bucket count.");
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowExceedsInitializedBucketCount(int bucketCount, int initializedBucketCount)
-        {
-            throw new InvalidOperationException($"The mask grew to {bucketCount} buckets, which exceeds the expected {initializedBucketCount}.");
-        }
-
-        [DoesNotReturn]
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ThrowNegativeIndexArgument(string argName)
-        {
-            throw new ArgumentOutOfRangeException(argName, "Index must be a positive integer or zero.");
-        }
+        currentBit = BitOperations.TrailingZeroCount(currentBucket);
+        currentBucket &= currentBucket - 1;
+        return true;
     }
-    #endregion
+}
 
-    #region Workspace
+/// <summary>
+/// An enumerator iterating through all intersecting bits of two <see cref="BitMask"/> instances.
+/// </summary>
+/// <param name="a">The first <see cref="BitMask"/> in the intersection enumeration.</param>
+/// <param name="b">The second <see cref="BitMask"/> in the intersection enumeration.</param>
+public ref struct IntersectionEnumerator(ReadOnlySpan<ulong> a, ReadOnlySpan<ulong> b)
+{
+    private readonly ReadOnlySpan<ulong> a = a;
+    private readonly ReadOnlySpan<ulong> b = b;
+    private readonly int bucketCount = a.Length < b.Length ? a.Length : b.Length;
+
+    private int bucketIndex = 0;
+    private ulong currentBucket = 0;
+    private int currentBit = -1;
+
     /// <summary>
-    /// A mutable workspace to perform allocation free optimized bitwise operations on a <see cref="BitMask"/>.
+    /// The index of the current set bit.
     /// </summary>
-    public readonly ref struct Workspace
-    {
-        private readonly ulong[] buckets;
+    public readonly int Current => ((bucketIndex - 1) << 6) | currentBit;
 
-        /// <summary>
-        /// Creates a <see cref="Workspace"/> of a specified length with all bits set to zero.
-        /// </summary>
-        /// <param name="bucketCount">The number of buckets in the <see cref="Workspace"/>.</param>
-        public Workspace(int bucketCount)
-        {
-            buckets = new ulong[bucketCount];
-        }
-
-        /// <summary>
-        /// Creates a <see cref="Workspace"/> from a <see cref="BitMask"/>.
-        /// </summary>
-        /// <param name="mask">The <see cref="BitMask"/> to initialize the workspace with.</param>
-        public Workspace(BitMask mask)
-        {
-            buckets = new ulong[mask.BucketCount];
-            mask.Buckets.CopyTo(buckets);
-        }
-
-        /// <summary>
-        /// Performs the AND operation on the bucket at <paramref name="bucketIndex"/> in the
-        /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
-        /// </summary>
-        /// <param name="bucketIndex">The index of the buckets.</param>
-        /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
-        /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void AndBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
-        {
-            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndBucketAt));
-            BitOps.AndBucketAt(buckets, bucketIndex, other);
-        }
-
-        /// <summary>
-        /// Performs the AND NOT operation on the bucket at <paramref name="bucketIndex"/> in the
-        /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
-        /// </summary>
-        /// <param name="bucketIndex">The index of the buckets.</param>
-        /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
-        /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void AndNotBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
-        {
-            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndNotBucketAt));
-            BitOps.AndNotBucketAt(buckets, bucketIndex, other);
-        }
-
-        /// <summary>
-        /// Performs the OR operation on the bucket at <paramref name="bucketIndex"/> in the
-        /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
-        /// </summary>
-        /// <param name="bucketIndex">The index of the buckets.</param>
-        /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
-        /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
-        /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
-        public void OrBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
-        {
-            BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(OrBucketAt));
-            BitOps.OrBucketAt(buckets, bucketIndex, other);
-        }
-
-        /// <summary>
-        /// Clears the workspace setting all bits to zero.
-        /// </summary>
-        public void Clear()
-        {
-            for (int i = 0; i < buckets.Length; i++)
-            {
-                buckets[i] = 0UL;
-            }
-        }
-
-        /// <summary>
-        /// Creates an enumerator looping through the indicies of all set bits in the <see cref="Workspace"/>.
-        /// </summary>
-        /// <returns>A new <see cref="BitMaskEnumerator"/>.</returns>
-        public BitMaskEnumerator GetEnumerator() => new(buckets);
-    }
-    #endregion
-
-    #region Comparer
     /// <summary>
-    /// Compares two <see cref="BitMask"/> objects treating them as a large unsigned integer.
+    /// Move to the index of the next set bit.
+    /// </summary>
+    /// <returns>True if there are any remaining set bits in the <see cref="BitMask"/>; otherwise False.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool MoveNext()
+    {
+        while (currentBucket == 0UL)
+        {
+            if (bucketIndex >= bucketCount)
+            {
+                return false;
+            }
+
+            currentBucket = a[bucketIndex] & b[bucketIndex];
+            bucketIndex++;
+        }
+
+        currentBit = BitOperations.TrailingZeroCount(currentBucket);
+        currentBucket &= currentBucket - 1;
+        return true;
+    }
+}
+#endregion
+
+#region Builders
+/// <summary>
+/// A builder used to create a new <see cref="BitMask"/>.
+/// </summary>
+public class Builder
+{
+    private readonly int initializedBucketCount;
+    private ulong[]? buckets;
+
+    /// <summary>
+    /// Indicates if all bits of the <see cref="Builder"/> is set to zero.
+    /// </summary>
+    public bool IsZero => BitOps.IsZero(buckets);
+
+    /// <summary>
+    /// Indicates if the <see cref="Builder"/> already has been used to produce a <see cref="BitMask"/>.
+    /// </summary>
+    [MemberNotNullWhen(false, nameof(buckets))]
+    public bool IsConsumed => buckets is null;
+
+    /// <summary>
+    /// Creates a new <see cref="Builder"/> with an unrestricted bucket count.
     /// </summary>
     /// <remarks>
-    /// When comparing <see cref="BitMask"/> objects of different lengths, missing buckets are treated as zero.
+    /// This requires calling <see cref="ToBitMask(int)"/> and specifying the bucket count when producing the <see cref="BitMask"/>.
     /// </remarks>
-    public class NumericComparer : IComparer<BitMask>
+    public Builder()
     {
-        public static readonly NumericComparer Instance = new();
+        initializedBucketCount = -1;
+        buckets = [];
+    }
 
-        public int Compare(BitMask x, BitMask y)
+    /// <summary>
+    /// Creates a new <see cref="Builder"/> with a restricted bucket count.
+    /// </summary>
+    /// <remarks>
+    /// This allows calling <see cref="ToBitMask()"/> when producing the <see cref="BitMask"/>.
+    /// </remarks>
+    public Builder(int bucketCount)
+    {
+        initializedBucketCount = bucketCount;
+        buckets = new ulong[bucketCount];
+    }
+
+    /// <summary>
+    /// Sets a specified bit in the <see cref="Builder"/> to 1.
+    /// </summary>
+    /// <param name="index">The index of the bit to set.</param>
+    /// <returns>True if the bit was NOT already set; otherwise False.</returns>
+    /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">If the index is not a positive integer.</exception>
+    public bool Set(int index)
+    {
+        if (index < 0)
         {
-            int len = Math.Max(x.Buckets.Length, y.Buckets.Length);
-            for (int i = len - 1; i >= 0; i--)
-            {
-                var xBucket = i < x.Buckets.Length ? x.Buckets[i] : 0UL;
-                var yBucket = i < y.Buckets.Length ? y.Buckets[i] : 0UL;
-                if (xBucket != yBucket)
-                {
-                    return xBucket.CompareTo(yBucket);
-                }
-            }
+            ThrowNegativeIndexArgument(nameof(index));
+        }
 
-            return 0;
+        var requiredBucketCount = BitOps.GetBucketCount(index + 1);
+        ReziseIfRequired(requiredBucketCount);
+        return BitOps.Set(buckets, index);
+    }
+
+    /// <summary>
+    /// Performs the OR operation with the BucketValue of <paramref name="bucketMask"/> on the bucket at
+    /// the index specified by BucketIndex in <paramref name="bucketMask"/>.
+    /// </summary>
+    /// <param name="bucketMask">The <see cref="BucketMask"/>.</param>
+    public void OrBucket(BucketMask bucketMask)
+    {
+        ReziseIfRequired(bucketMask.BucketIndex + 1);
+        buckets[bucketMask.BucketIndex] |= bucketMask.BucketValue;
+    }
+
+    /// <summary>
+    /// Zeroes out the bucket at <paramref name="bucketIndex"/>.
+    /// </summary>
+    /// <param name="bucketIndex">The bucket to clear.</param>
+    public void ClearBucket(int bucketIndex)
+    {
+        ReziseIfRequired(bucketIndex + 1);
+        buckets[bucketIndex] = 0UL;
+    }
+
+    /// <summary>
+    /// Performs the AND NOT operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
+    /// </summary>
+    /// <param name="other">The <see cref="BitMask"/> to use when performing the AND NOT operation on the <see cref="Builder"/>.</param>
+    /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
+    public void AndNot(ReadOnlySpan<ulong> other)
+    {
+        ReziseIfRequired(other.Length);
+        for (int i = 0; i < other.Length; i++)
+        {
+            BitOps.AndNotBucketAt(buckets, i, other);
         }
     }
+
+    /// <summary>
+    /// Performs the OR operation on the <see cref="Builder"/> with the value of <paramref name="other"/>.
+    /// </summary>
+    /// <param name="other">The <see cref="BitMask"/> to use when performing the OR operation on the <see cref="Builder"/>.</param>
+    /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
+    public void Or(BitMask other)
+    {
+        ReziseIfRequired(other.BucketCount);
+        for (int i = 0; i < other.BucketCount; i++)
+        {
+            BitOps.OrBucketAt(buckets, i, other);
+        }
+    }
+
+    /// <summary>
+    /// Produces a <see cref="BitMask"/> from the <see cref="Builder"/>.
+    /// </summary>
+    /// <remarks>
+    /// This will consume the <see cref="Builder"/> making it unusable.
+    /// </remarks>
+    /// <returns>A new <see cref="BitMask"/>.</returns>
+    /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed, the bucket count is unknown or the
+    /// underlying array is longer than the number of buckets the <see cref="Builder"/> was initialized to support.</exception>
+    public BitMask ToBitMask()
+    {
+        ThrowIfConsumed();
+
+        if (initializedBucketCount == -1)
+        {
+            ThrowUnknownBucketCount();
+        }
+
+        if (buckets.Length > initializedBucketCount)
+        {
+            ThrowExceedsInitializedBucketCount(buckets.Length, initializedBucketCount);
+        }
+
+        return ToBitMask(initializedBucketCount);
+    }
+
+    /// <summary>
+    /// Produces a <see cref="BitMask"/> from the <see cref="Builder"/> with exactly <paramref name="exactBucketCount"/> of
+    /// buckets.
+    /// </summary>
+    /// <remarks>
+    /// <list type="bullet">
+    /// <item>Buckets added for padding will be zero.</item>
+    /// <item>This will consume the <see cref="Builder"/> making it unusable.</item>
+    /// </list>
+    /// </remarks>
+    /// <param name="exactBucketCount">The exact number of buckets of the resulting <see cref="BitMask"/>.</param>
+    /// <returns>A new <see cref="BitMask"/>.</returns>
+    /// <exception cref="InvalidOperationException">If the <see cref="Builder"/> is consumed.</exception>
+    public BitMask ToBitMask(int exactBucketCount)
+    {
+        ReziseIfRequired(exactBucketCount);
+        var immutable = ImmutableCollectionsMarshal.AsImmutableArray(buckets);
+        buckets = null;
+        return new BitMask(immutable);
+    }
+
+    /// <summary>
+    /// Creates a new <see cref="Builder"/> initialized with the bits set in <paramref name="mask"/>.
+    /// </summary>
+    /// <param name="mask">The <see cref="BitMask"/> to initialize the builder with.</param>
+    /// <returns>A new instance of <see cref="Builder"/> with the bits set in <paramref name="mask"/> set.</returns>
+    public static Builder From(BitMask mask)
+    {
+        var builder = new Builder(mask.BucketCount);
+#pragma warning disable CS8604 // builder.buckets can not be null on a fresh instance.
+        mask.Buckets.CopyTo(builder.buckets);
+#pragma warning restore CS8604
+        return builder;
+    }
+
+    /// <summary>
+    /// Resizes the underlying array if the required length is greater than the current length of the underlying array.
+    /// </summary>
+    /// <param name="requiredBucketCount">The required length of the underlying array.</param>
+    /// <exception cref="InvalidOperationException">If the builder is consumed.</exception>
+    [MemberNotNull(nameof(buckets))]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ReziseIfRequired(int requiredBucketCount)
+    {
+        ThrowIfConsumed();
+
+        if (buckets.Length < requiredBucketCount)
+        {
+            Array.Resize(ref buckets, requiredBucketCount);
+        }
+    }
+
+    /// <summary>
+    /// Throws an <see cref="InvalidOperationException"/> if the builder has been consumed.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If the builder is consumed.</exception>
+    [MemberNotNull(nameof(buckets))]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ThrowIfConsumed()
+    {
+        if (IsConsumed)
+        {
+            ThrowIsConsumed();
+        }
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowIsConsumed()
+    {
+        throw new InvalidOperationException("Can not operate on a builder that is consumed.");
+    }
+
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowUnknownBucketCount()
+    {
+        throw new InvalidOperationException("Can not create a bit mask with an unknown bucket count.");
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowExceedsInitializedBucketCount(int bucketCount, int initializedBucketCount)
+    {
+        throw new InvalidOperationException($"The mask grew to {bucketCount} buckets, which exceeds the expected {initializedBucketCount}.");
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowNegativeIndexArgument(string argName)
+    {
+        throw new ArgumentOutOfRangeException(argName, "Index must be a positive integer or zero.");
+    }
+}
+#endregion
+
+#region Workspace
+/// <summary>
+/// A mutable workspace to perform allocation free optimized bitwise operations on a <see cref="BitMask"/>.
+/// </summary>
+public readonly ref struct Workspace
+{
+    private readonly ulong[] buckets;
+
+    /// <summary>
+    /// Creates a <see cref="Workspace"/> of a specified length with all bits set to zero.
+    /// </summary>
+    /// <param name="bucketCount">The number of buckets in the <see cref="Workspace"/>.</param>
+    public Workspace(int bucketCount)
+    {
+        buckets = new ulong[bucketCount];
+    }
+
+    /// <summary>
+    /// Creates a <see cref="Workspace"/> from a <see cref="BitMask"/>.
+    /// </summary>
+    /// <param name="mask">The <see cref="BitMask"/> to initialize the workspace with.</param>
+    public Workspace(BitMask mask)
+    {
+        buckets = new ulong[mask.BucketCount];
+        mask.Buckets.CopyTo(buckets);
+    }
+
+    /// <summary>
+    /// Performs the AND operation on the bucket at <paramref name="bucketIndex"/> in the
+    /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
+    /// </summary>
+    /// <param name="bucketIndex">The index of the buckets.</param>
+    /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
+    /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
+    /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+    public void AndBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndBucketAt));
+        BitOps.AndBucketAt(buckets, bucketIndex, other);
+    }
+
+    /// <summary>
+    /// Performs the AND NOT operation on the bucket at <paramref name="bucketIndex"/> in the
+    /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
+    /// </summary>
+    /// <param name="bucketIndex">The index of the buckets.</param>
+    /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
+    /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
+    /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+    public void AndNotBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(AndNotBucketAt));
+        BitOps.AndNotBucketAt(buckets, bucketIndex, other);
+    }
+
+    /// <summary>
+    /// Performs the OR operation on the bucket at <paramref name="bucketIndex"/> in the
+    /// <see cref="Workspace"/> with the bucket at the same index in <paramref name="other"/>.
+    /// </summary>
+    /// <param name="bucketIndex">The index of the buckets.</param>
+    /// <param name="other">The <see cref="BitMask"/> containing to use.</param>
+    /// <exception cref="InvalidOperationException">If the length of the underlying arrays of this <see cref="Workspace"/> and <paramref name="other"/> differs.</exception>
+    /// <exception cref="IndexOutOfRangeException">If <paramref name="bucketIndex"/> is outside the bounds of the underlying array.</exception>
+    public void OrBucketAt(int bucketIndex, ReadOnlySpan<ulong> other)
+    {
+        BitOps.ThrowIfDifferentLengthOrOutOfBounds(buckets, other, bucketIndex, nameof(OrBucketAt));
+        BitOps.OrBucketAt(buckets, bucketIndex, other);
+    }
+
+    /// <summary>
+    /// Clears the workspace setting all bits to zero.
+    /// </summary>
+    public void Clear()
+    {
+        for (int i = 0; i < buckets.Length; i++)
+        {
+            buckets[i] = 0UL;
+        }
+    }
+
+    /// <summary>
+    /// Creates an enumerator looping through the indicies of all set bits in the <see cref="Workspace"/>.
+    /// </summary>
+    /// <returns>A new <see cref="BitMaskEnumerator"/>.</returns>
+    public BitMaskEnumerator GetEnumerator() => new(buckets);
+}
     #endregion
 }
 
