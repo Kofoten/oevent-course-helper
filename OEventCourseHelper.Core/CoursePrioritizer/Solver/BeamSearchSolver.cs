@@ -69,12 +69,6 @@ internal class BeamSearchSolver(int BeamWidth)
         {
             foreach (var candidate in beam)
             {
-                if (candidate.IsComplete)
-                {
-                    beamBuilder.InsertOrDiscard(new CandidateBlueprint(candidate));
-                    continue;
-                }
-
                 foreach (var controlIndex in candidate.UnvisitedControlsMask)
                 {
                     var firstBucket = controlIndex * context.CourseMaskBucketCount;

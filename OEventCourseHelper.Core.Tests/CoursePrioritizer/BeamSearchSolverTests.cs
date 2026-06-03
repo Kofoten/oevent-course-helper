@@ -95,7 +95,6 @@ public class BeamSearchSolverTests
         var actual = solver.Solve(dataSet);
 
         // Assert
-        actual.Success.Should().BeTrue();
-        actual.PriorityOrder.Should().BeEmpty();
+        actual.Success.Should().BeFalse();
     }
 }
