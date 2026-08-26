@@ -1,18 +1,18 @@
 name: Release Runner
-
 on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
-
 permissions:
   contents: write
   id-token: write
 
 jobs:
-  release:
+  build_linux_and_prepare:
     runs-on: oevent-course-helper-arc-runner 
-
+    outputs:
+      semver: ${{ steps.export_vars.outputs.SEMVER }}
+      version: ${{ steps.export_vars.outputs.VERSION }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -30,14 +30,17 @@ jobs:
         shell: bash
         run: set-clean-version.sh
 
-      - name: Authenticate with NuGet.org
-        uses: NuGet/login@v1
-        id: nuget_login
-        with:
-          user: RasmusSteen
+      - name: Export Version Variables
+        id: export_vars
+        run: |
+          echo "SEMVER=${SEMVER}" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Restore Dependencies
         run: dotnet restore -p:Version=${{ env.SEMVER }}
+
+      - name: Run Tests
+        run: dotnet test --no-build --verbosity normal -p:Version=${{ env.SEMVER }}
 
       - name: Generate ThirdPartyNotices
         run: |
@@ -48,33 +51,98 @@ jobs:
           ./ThirdPartyNotices.txt \
           ./Licenses
 
-      - name: Build
-        run: dotnet build --no-restore -p:Version=${{ env.SEMVER }}
+      - name: Upload ThirdPartyNotices Artifact (For Windows Job)
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-party-notices
+          path: ./ThirdPartyNotices.txt
 
-      - name: Run Tests
-        run: dotnet test --no-build --verbosity normal -p:Version=${{ env.SEMVER }}
-
-      - name: Build and Zip All Platforms
+      - name: Publish Native AOT (Linux)
+        shell: bash
         run: |
-          RIDS=("win-x64" "win-x86" "linux-x64")
-          
-          for RID in "${RIDS[@]}"; do
-            echo "Publishing for $RID..."
-            
-            dotnet publish OEventCourseHelper/OEventCourseHelper.csproj \
-              -c Release \
-              -r $RID \
-              --self-contained false \
-              -p:PublishSingleFile=false \
-              -p:Version=${{ env.SEMVER }} \
-              -o ./publish_$RID
+          dotnet publish OEventCourseHelper/OEventCourseHelper.csproj \
+            -c Release \
+            -r linux-x64 \
+            -p:PublishAot=true \
+            -p:Version=${{ env.SEMVER }} \
+            -o ./publish_linux-x64
 
-            cp ./ThirdPartyNotices.txt ./publish_$RID/
-            cp ./README.md ./publish_$RID/
-            cp ./LICENSE ./publish_$RID/LICENSE.txt
-            
-            zip -j OEventCourseHelper-${{ env.VERSION }}-$RID.zip ./publish_$RID/*
-          done
+      - name: Package Linux Binary
+        run: |
+          cp ./README.md ./publish_linux-x64/
+          cp ./LICENSE ./publish_linux-x64/LICENSE.txt
+          cp ./ThirdPartyNotices.txt ./publish_linux-x64/
+          zip -j OEventCourseHelper-${{ env.VERSION }}-linux-x64.zip ./publish_linux-x64/*
+
+      - name: Upload Linux Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-linux-x64
+          path: OEventCourseHelper-*-linux-x64.zip
+
+  build_windows:
+    needs: build_linux_and_prepare
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Download ThirdPartyNotices
+        uses: actions/download-artifact@v4
+        with:
+          name: third-party-notices
+
+      - name: Publish Native AOT (Windows)
+        shell: bash
+        run: |
+          dotnet publish OEventCourseHelper/OEventCourseHelper.csproj \
+            -c Release \
+            -r win-x64 \
+            -p:PublishAot=true \
+            -p:Version=${{ needs.build_linux_and_prepare.outputs.semver }} \
+            -o ./publish_win-x64
+
+      - name: Package Windows Binary
+        run: |
+          cp ./README.md ./publish_win-x64/
+          cp ./LICENSE ./publish_win-x64/LICENSE.txt
+          cp ./ThirdPartyNotices.txt ./publish_win-x64/
+          Compress-Archive -Path ./publish_win-x64/* -DestinationPath OEventCourseHelper-${{ needs.build_linux_and_prepare.outputs.version }}-win-x64.zip
+
+      - name: Upload Windows Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-win-x64
+          path: OEventCourseHelper-*-win-x64.zip
+
+  publish:
+    needs: [build_linux_and_prepare, build_windows]
+    runs-on: oevent-course-helper-arc-runner
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Restore Env Vars
+        run: |
+          echo "VERSION=${{ needs.build_linux_and_prepare.outputs.version }}" >> $GITHUB_ENV
+          echo "SEMVER=${{ needs.build_linux_and_prepare.outputs.semver }}" >> $GITHUB_ENV
+
+      - name: Download Binary Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: true
+
+      - name: Authenticate with NuGet.org
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: RasmusSteen
 
       - name: Pack OEventCourseHelper.Core
         run: dotnet pack OEventCourseHelper.Core/OEventCourseHelper.Core.csproj -c Release -o ./nupkg -p:Version=${{ env.SEMVER }}
