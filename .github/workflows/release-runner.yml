@@ -40,7 +40,7 @@ jobs:
         run: dotnet restore -p:Version=${{ env.SEMVER }}
 
       - name: Run Tests
-        run: dotnet test --no-build --verbosity normal -p:Version=${{ env.SEMVER }}
+        run: dotnet test --no-restore --verbosity normal -p:Version=${{ env.SEMVER }}
 
       - name: Generate ThirdPartyNotices
         run: |
