@@ -18,7 +18,8 @@ jobs:
         run: dotnet restore
 
       - name: Validate licenses
-        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj \
+        run: |
+          dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj \
           -- \
           ./OEventCourseHelper/obj/project.assets.json \
           ./ThirdPartyNotices.txt \
