@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		LICENSE = LICENSE
 		README.md = README.md
-		runner.Dockerfile = runner.Dockerfile
-		runner.values.yaml = runner.values.yaml
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Tests", "OEventCourseHelper.Tests\OEventCourseHelper.Tests.csproj", "{BC911FC2-94A2-40F0-9FF2-25E6D5A0FF9B}"
@@ -29,10 +27,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GenerateThirdPartyNotices", "GenerateThirdPartyNotices\GenerateThirdPartyNotices.csproj", "{17A0EFDC-D0A6-4910-9119-981D05FB9D92}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Licenses", "Licenses", "{311A6A73-0149-481D-9260-814A61E5DE45}"
-	ProjectSection(SolutionItems) = preProject
-		Licenses\Spectre.Console.Cli_0.53.1 = Licenses\Spectre.Console.Cli_0.53.1
-		Licenses\Spectre.Console_0.53.1 = Licenses\Spectre.Console_0.53.1
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OEventCourseHelper.Core", "OEventCourseHelper.Core\OEventCourseHelper.Core.csproj", "{E5A22012-4CDB-4F50-876E-55C5B79AA4B8}"
 EndProject

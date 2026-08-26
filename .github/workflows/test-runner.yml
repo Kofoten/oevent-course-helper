@@ -18,7 +18,7 @@ jobs:
         run: dotnet restore
 
       - name: Validate licenses
-        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj -- ./OEventCourseHelper/obj/project.assets.json ./ThirdPartyNotices.txt ./Licenses
+        run: dotnet run --project ./GenerateThirdPartyNotices/GenerateThirdPartyNotices.csproj -- ./OEventCourseHelper/obj/project.assets.json ./ThirdPartyNotices.txt ./Licenses -i Microsoft.DotNet.ILCompiler Microsoft.NET.ILLink.Tasks runtime.linux-x64.Microsoft.DotNet.ILCompiler
 
       - name: Build
         run: dotnet build --no-restore
