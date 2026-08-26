@@ -1,56 +1,78 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Kofoten.NativeCli;
+using Microsoft.Extensions.Logging;
 using OEventCourseHelper.Cli;
 using OEventCourseHelper.Core.CoursePrioritizer;
 using OEventCourseHelper.Data;
 using OEventCourseHelper.Logging;
-using Spectre.Console;
-using Spectre.Console.Cli;
+using System.Collections.Frozen;
 
 namespace OEventCourseHelper.Commands.CoursePrioritizer;
 
 internal class CoursePrioritizerCommand(
     ApplicationContext applicationContext,
     ILogger<CoursePrioritizerCommand> logger)
-    : Command<CoursePrioritizerSettings>
+    : ICliCommand
 {
-    public override ValidationResult Validate(CommandContext context, CoursePrioritizerSettings settings)
+    [CliArgument(0, nameof(IofXmlFilePath), Description = "The path to the IOF XML 3.0 file.")]
+    public required string IofXmlFilePath { get; init; }
+
+    [CliOption("beam-width", Short = 'b', Description = "The beam width to use for the prioritization algorithm. Must be a positive integer.")]
+    public int BeamWidth { get; init; } = 3;
+
+    [CliOption("filter", Short = 'f', Description = "One or more strings to filter course names by. Only courses containing one of these strings will be included.")]
+    public FrozenSet<string> Filters { get; init; } = [];
+
+    [CliOption("strict", Short = 's', Description = "If set, the prioritization will fail if any required courses are not included in the final result.")]
+    public bool Strict { get; init; }
+
+    [CliOption("porcelain", Description = "Machine-readable output. Available versions: v1", ImplicitValue = "v1")]
+    public string? Porcelain { get; init; }
+
+    public CliValidationResult Validate()
     {
-        if (!File.Exists(settings.IofXmlFilePath))
+        var errors = new List<string>();
+
+        if (!File.Exists(IofXmlFilePath))
         {
-            return ValidationResult.Error($"The file '{settings.IofXmlFilePath}' could not be found.");
+            errors.Add($"The file '{IofXmlFilePath}' could not be found.");
         }
 
-        if (settings.BeamWidth <= 0)
+        if (BeamWidth <= 0)
         {
-            return ValidationResult.Error("Beam width must be a positive integer.");
+            errors.Add("Beam width must be a positive integer.");
         }
 
-        if (settings.Porcelain.IsSet && !applicationContext.IsPorcelainVersionSupported(settings.Porcelain.Value))
+        if (Porcelain is not null && !applicationContext.IsPorcelainVersionSupported(Porcelain))
         {
-            return ValidationResult.Error($"Invalid porcelain version: {settings.Porcelain.Value}");
+            errors.Add($"Invalid porcelain version: {Porcelain}");
         }
 
-        return ValidationResult.Success();
+        if (errors.Count > 0)
+        {
+            return new CliValidationResult.Failure(errors);
+        }
+
+        return new CliValidationResult.Success();
     }
 
-    public override int Execute(CommandContext context, CoursePrioritizerSettings settings, CancellationToken _)
+    public int Execute()
     {
-        if (settings.Porcelain.IsSet)
+        if (Porcelain is not null)
         {
-            applicationContext.SetPorcelainLoggingMode(settings.Porcelain.Value);
+            applicationContext.SetPorcelainLoggingMode(Porcelain);
         }
 
-        var engine = new CoursePrioritizerEngine(settings.BeamWidth, settings.Strict, settings.Filters);
+        var engine = new CoursePrioritizerEngine(BeamWidth, Strict, Filters);
 
         CoursePrioritizerResult result;
-        using (var fileStream = new FileStream(settings.IofXmlFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        using (var fileStream = new FileStream(IofXmlFilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
         {
             result = engine.Run(fileStream);
         }
 
         return result switch
         {
-            CoursePrioritizerResult.ParseStreamFailure r => HandleParseStreamFailure(r, settings.IofXmlFilePath),
+            CoursePrioritizerResult.ParseStreamFailure r => HandleParseStreamFailure(r, IofXmlFilePath),
             CoursePrioritizerResult.ValidationFailure r => HandleValidationFailure(r),
             CoursePrioritizerResult.NoSolutionFound r => HandleNoSolutionFound(r),
             CoursePrioritizerResult.Success r => HandleSuccess(r),

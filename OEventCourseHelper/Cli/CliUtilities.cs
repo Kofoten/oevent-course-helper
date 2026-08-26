@@ -1,32 +1,26 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Kofoten.NativeCli;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OEventCourseHelper.Data;
-using OEventCourseHelper.Extensions;
 using OEventCourseHelper.Logging;
-using Spectre.Console;
-using Spectre.Console.Cli;
 
 namespace OEventCourseHelper.Cli;
 
 internal class CliUtilities
 {
-    public static int ExceptionHandler(Exception exception, ITypeResolver? resolver)
+    public static int ExceptionHandler(Exception exception, IServiceProvider? sp)
     {
-        ILogger<Program>? logger = null;
-        try
-        {
-            logger = resolver?.Resolve<ILogger<Program>>();
-        }
-        catch { }
+        ILogger<Program>? logger = sp?.GetService<ILogger<Program>>();
 
-        if (exception is CommandRuntimeException cre)
+        if (exception is CliParseException cpe)
         {
             if (logger is not null)
             {
-                logger.FailedToParseArguments(cre.Message);
+                logger.FailedToParseArguments(cpe.Message);
             }
             else
             {
-                AnsiConsole.WriteLine(cre.Message);
+                Console.Out.WriteLine(cpe.Message);
             }
 
             return ExitCode.FailedToParseArguments;
@@ -38,7 +32,7 @@ internal class CliUtilities
         }
         else
         {
-            AnsiConsole.WriteException(exception);
+            TerminalWriter.Create().WriteException(Console.Error, exception);
         }
 
         return ExitCode.UnhandledException;

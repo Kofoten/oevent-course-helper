@@ -3,8 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Options;
 using OEventCourseHelper.Logging.Porcelain;
-using Spectre.Console;
-using System.Diagnostics.CodeAnalysis;
 
 namespace OEventCourseHelper.Logging;
 
@@ -16,19 +14,7 @@ internal class OEventCourseHelperConsoleFormatter(
     public const string FormatterName = "oevent-course-helper-console-formatter";
 
     private readonly IOptionsMonitor<OEventCourseHelperLoggingOptions> options = options;
-
-    private static readonly Style traceStyle = new(Color.Silver, Color.Black);
-    private static readonly Style debugStyle = new(Color.Aqua, Color.Black);
-    private static readonly Style infoStyle = new(Color.Green3, Color.Black);
-    private static readonly Style warningStyle = new(Color.Gold3, Color.Black);
-    private static readonly Style errorStyle = new(Color.Red3, Color.Black);
-    private static readonly Style criticalStyle = new(Color.Fuchsia, Color.Black);
-    private static readonly Style noneStyle = new(Color.White, Color.Black);
-    private static readonly Style eventIdStyle = new(Color.DarkSeaGreen3, Color.Black);
-    private static readonly Style parameterHighlightingStyle = new(Color.LightSteelBlue, Color.Black);
-
-    private readonly Lock ansiConsoleInitLock = new();
-    private IAnsiConsole? ansiConsole = null;
+    private readonly TerminalWriter terminalWriter = TerminalWriter.Create();
 
     public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider? scopeProvider, TextWriter textWriter)
     {
@@ -48,43 +34,35 @@ internal class OEventCourseHelperConsoleFormatter(
 
     private void WriteSpectre<TState>(in LogEntry<TState> logEntry, TextWriter textWriter)
     {
-        EnsureAnsiConsole(textWriter);
-
         switch (logEntry.LogLevel)
         {
             case LogLevel.Trace:
-                ansiConsole.Write("TRACE", traceStyle);
+                terminalWriter.WriteTraceLabel(textWriter);
                 break;
             case LogLevel.Debug:
-                ansiConsole.Write("DEBUG", debugStyle);
+                terminalWriter.WriteDebugLabel(textWriter);
                 break;
             case LogLevel.Information:
-                ansiConsole.Write("INFO", infoStyle);
+                terminalWriter.WriteInfoLabel(textWriter);
                 break;
             case LogLevel.Warning:
-                ansiConsole.Write("WARNING", warningStyle);
+                terminalWriter.WriteWarningLabel(textWriter);
                 break;
             case LogLevel.Error:
-                ansiConsole.Write("ERROR", errorStyle);
+                terminalWriter.WriteErrorLabel(textWriter);
                 break;
             case LogLevel.Critical:
-                ansiConsole.Write("CRITICAL", criticalStyle);
+                terminalWriter.WriteCriticalLabel(textWriter);
                 break;
             case LogLevel.None:
             default:
-                ansiConsole.Write("NONE", noneStyle);
+                terminalWriter.WriteNoneLabel(textWriter);
                 break;
         }
 
-        ansiConsole.Write(": ");
-        ansiConsole.Write(logEntry.EventId.Id.ToString(), eventIdStyle);
-
-        if (!string.IsNullOrWhiteSpace(logEntry.EventId.Name))
-        {
-            ansiConsole.Write("|");
-            ansiConsole.Write(logEntry.EventId.Name, eventIdStyle);
-            ansiConsole.Write(": ");
-        }
+        textWriter.Write(": ");
+        terminalWriter.WriteEventId(textWriter, logEntry.EventId);
+        textWriter.Write(": ");
 
         if (logEntry.State is IEnumerable<KeyValuePair<string, object>> properties)
         {
@@ -94,7 +72,7 @@ internal class OEventCourseHelperConsoleFormatter(
             {
                 if (template.StartsWith('{') && template.EndsWith('}') && template.Count(c => c == '{') == 1)
                 {
-                    ansiConsole.WriteLine(logEntry.Formatter.Invoke(logEntry.State, null));
+                    textWriter.WriteLine(logEntry.Formatter.Invoke(logEntry.State, null));
                 }
                 else
                 {
@@ -107,11 +85,11 @@ internal class OEventCourseHelperConsoleFormatter(
                         var closeBrace = template.IndexOf('}', openBrace);
                         if (closeBrace == -1) break;
 
-                        ansiConsole.Write(template[lastIndex..openBrace]);
+                        textWriter.Write(template[lastIndex..openBrace]);
                         var paramName = template.Substring(openBrace + 1, closeBrace - openBrace - 1);
                         if (propsDict.TryGetValue(paramName, out var val))
                         {
-                            ansiConsole.Write(val.ToString() ?? string.Empty, parameterHighlightingStyle);
+                            terminalWriter.WriteParameter(textWriter, val?.ToString() ?? string.Empty);
                         }
 
                         lastIndex = closeBrace + 1;
@@ -119,17 +97,18 @@ internal class OEventCourseHelperConsoleFormatter(
 
                     if (lastIndex < template.Length)
                     {
-                        ansiConsole.Write(template[lastIndex..]);
+                        textWriter.Write(template[lastIndex..]);
                     }
 
-                    ansiConsole.WriteLine();
+                    textWriter.WriteLine();
                 }
             }
         }
 
         if (logEntry.Exception is not null)
         {
-            ansiConsole.WriteException(logEntry.Exception);
+            textWriter.WriteLine();
+            terminalWriter.WriteException(textWriter, logEntry.Exception);
         }
     }
 
@@ -137,29 +116,5 @@ internal class OEventCourseHelperConsoleFormatter(
     {
         var formatter = porcelainFormatterRegistry.GetFormatter(options.CurrentValue.PorcelainVersion);
         formatter.Write(logEntry, textWriter);
-    }
-
-    [MemberNotNull(nameof(ansiConsole))]
-    private void EnsureAnsiConsole(TextWriter textWriter)
-    {
-        if (ansiConsole is not null)
-        {
-            return;
-        }
-
-        lock (ansiConsoleInitLock)
-        {
-            if (ansiConsole is not null)
-            {
-                return;
-            }
-
-            var settings = new AnsiConsoleSettings()
-            {
-                Out = new AnsiConsoleOutput(textWriter),
-            };
-
-            ansiConsole ??= AnsiConsole.Create(settings);
-        }
     }
 }

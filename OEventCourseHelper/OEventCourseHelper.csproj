@@ -6,12 +6,13 @@
     <LangVersion>14.0</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Kofoten.NativeCli.DependencyInjection" Version="0.0.12" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.9" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.9" />
-    <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
   </ItemGroup>
 
   <ItemGroup>
