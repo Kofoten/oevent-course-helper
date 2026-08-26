@@ -21,39 +21,14 @@ jobs:
           fetch-tags: true
 
       - name: Ensure Tag is on Main
-        run: |
-          git fetch origin main
-
-          if git merge-base --is-ancestor "$GITHUB_REF_NAME" origin/main; then
-            echo "Tag $GITHUB_REF_NAME is on the main branch."
-          else
-            echo "ERROR: Tag $GITHUB_REF_NAME is NOT on the main branch!"
-            echo "Releases can only be created from commits on main."
-            exit 1
-          fi
+        run: ensure-main.sh
 
       - name: Validate Increasing Version
-        run: |
-          TARGET_VERSION="$GITHUB_REF_NAME"
-          echo "VERSION=$TARGET_VERSION" >> $GITHUB_ENV
-          
-          HIGHEST_TAG=$(git tag -l "v*" | sort -V | tail -n 1)
-          
-          echo "Pushed Tag: $TARGET_VERSION"
-          echo "Highest Tag in Repo: $HIGHEST_TAG"
-
-          if [ "$TARGET_VERSION" != "$HIGHEST_TAG" ]; then
-            echo "ERROR: You pushed $TARGET_VERSION, but $HIGHEST_TAG already exists."
-            echo "Release versions must strictly increase."
-            exit 1
-          fi
-          echo "Version check passed."
+        run: validate-increasing-version.sh
 
       - name: Set Clean Version
         shell: bash
-        run: |
-          CLEAN_VER=${GITHUB_REF_NAME#v}
-          echo "SEMVER=$CLEAN_VER" >> $GITHUB_ENV
+        run: set-clean-version.sh
 
       - name: Authenticate with NuGet.org
         uses: NuGet/login@v1
