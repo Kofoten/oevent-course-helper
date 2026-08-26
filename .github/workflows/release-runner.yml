@@ -49,7 +49,8 @@ jobs:
           -- \
           ./OEventCourseHelper/obj/project.assets.json \
           ./ThirdPartyNotices.txt \
-          ./Licenses
+          ./Licenses \
+          -i Microsoft.DotNet.ILCompiler Microsoft.NET.ILLink.Tasks runtime.linux-x64.Microsoft.DotNet.ILCompiler
 
       - name: Upload ThirdPartyNotices Artifact (For Windows Job)
         uses: actions/upload-artifact@v4
