@@ -1,6 +1,6 @@
 # OEvent Course Helper
 
-OEvent Course Helper is an extensible command-line utility designed to assist with real-world logistics and data processing for orienteering events. Built on modern .NET 10 and `Spectre.Console`, it provides a robust foundation for various event management tasks.
+OEvent Course Helper is an extensible command-line utility designed to assist with real-world logistics and data processing for orienteering events. Built on modern .NET 10 and my own `Kofoten.NativeCli`, it provides a robust foundation for various event management tasks.
 
 Currently, its flagship feature solves a complex set cover problem: determining the most efficient order to test-run courses to ensure all control points are physically verified before an event.
 
@@ -55,7 +55,7 @@ OEventCourseHelper prioritize SampleData/Test.Courses.xml -w 5 -f "Long" --stric
 
 The tool uses structured logging with two distinct output formatters:
 
-### Human-Readable (Spectre)
+### Human-Readable (Custom)
 
 The default mode, providing clean console output.
 
@@ -144,12 +144,10 @@ When running with `--porcelain`, you can reliably parse these event IDs:
 
 ## 📥 Installation
 
-To run this tool, you must have the **.NET 10 Runtime** installed on your system. You do not need the full .NET SDK, but the executables are explicitly *not* published as self-contained binaries.
-
-I do not ship this as a self-contained blob because I refuse to deal with the legalities of redistributing Microsoft's proprietary runtime binaries (even if the risk is practically zero). Furthermore, I do not publish Native AOT binaries because profiling has proven that the JIT compiler's Dynamic PGO actually outperforms AOT static compilation on large datasets.
+This is compiled Native AOT meaning it does not requires any .NET runtime to be present on your system. You can simply download the binaries and execute them directly.
 
 1. Navigate to the **Releases** page of this repository.
-2. Download the `.zip` file matching your operating system (`win-x64`, `win-x86`, or `linux-x64`).
+2. Download the `.zip` file matching your operating system (`win-x64` or `linux-x64`).
 3. Extract the archive and run the `OEventCourseHelper` executable directly from your terminal.
 
 ## 🤖 CI/CD & Automation
